@@ -6,6 +6,7 @@ import json
 import zipfile
 import argparse
 import re
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Optional
@@ -37,6 +38,11 @@ _ESP_SR_KCONFIG = Path(
     "managed_components/espressif__esp-sr/Kconfig.projbuild"
 )
 
+_WINDOWS_IDF_ACTIVATE = (
+    r". C:\Espressif\tools\Microsoft.v6.0.2.PowerShell_profile.ps1"
+)
+_EXAMPLE_BOARD_BUILD = r"python .\scripts\build.py lckfb/szpi-esp32s3"
+
 
 def _emit_build_stage(stage: str) -> None:
     """Emit a machine-readable stage marker for cloud build runners."""
@@ -55,11 +61,24 @@ def get_project_version() -> Optional[str]:
 
 
 def _run_idf(*args: str, preview: bool = False) -> None:
-    command = ["idf.py"]
+    command = [shutil.which("idf.py") or "idf.py"]
     if preview:
         command.append("--preview")
     command.extend(args)
-    if subprocess.run(command, check=False).returncode != 0:
+    try:
+        returncode = subprocess.run(command, check=False).returncode
+    except FileNotFoundError:
+        print(
+            "idf.py was not found. Activate the ESP-IDF environment before "
+            "running build.py.\n\n"
+            "PowerShell:\n"
+            f"  {_WINDOWS_IDF_ACTIVATE}\n"
+            f"  {_EXAMPLE_BOARD_BUILD}\n\n"
+            "Linux/macOS: source export.sh before running build.py.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if returncode != 0:
         print(f"{' '.join(command)} failed", file=sys.stderr)
         sys.exit(1)
 
@@ -1207,6 +1226,12 @@ def _select_variant(board: str, variants: list[dict[str, str]]) -> str:
 def main(argv: Optional[list[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         description="Configure and build one XiaoZhi board variant.",
+        epilog=(
+            "PowerShell example (activate ESP-IDF before running this script):\n"
+            f"  {_WINDOWS_IDF_ACTIVATE}\n"
+            f"  {_EXAMPLE_BOARD_BUILD}"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("board", nargs="?", default=None, help="Board type or 'all'")
     parser.add_argument("-c", "--config", default="config.json", help="Config filename (default: config.json)")

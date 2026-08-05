@@ -17,6 +17,49 @@ assert SPEC.loader is not None
 SPEC.loader.exec_module(build)
 
 
+class IdfCommandTests(unittest.TestCase):
+    def test_idf_command_uses_resolved_executable(self):
+        with (
+            mock.patch.object(
+                build.shutil,
+                "which",
+                return_value=r"C:\Espressif\tools\idf.py.EXE",
+            ),
+            mock.patch.object(build.subprocess, "run") as run,
+        ):
+            run.return_value.returncode = 0
+            build._run_idf("reconfigure")
+
+        run.assert_called_once_with(
+            [r"C:\Espressif\tools\idf.py.EXE", "reconfigure"],
+            check=False,
+        )
+
+    def test_missing_idf_command_reports_environment_setup(self):
+        with (
+            mock.patch.object(build.shutil, "which", return_value=None),
+            mock.patch.object(
+                build.subprocess,
+                "run",
+                side_effect=FileNotFoundError,
+            ),
+            contextlib.redirect_stderr(io.StringIO()) as stderr,
+            self.assertRaises(SystemExit) as exit_context,
+        ):
+            build._run_idf("reconfigure")
+
+        self.assertEqual(exit_context.exception.code, 1)
+        self.assertIn("idf.py was not found", stderr.getvalue())
+        self.assertIn(
+            r". C:\Espressif\tools\Microsoft.v6.0.2.PowerShell_profile.ps1",
+            stderr.getvalue(),
+        )
+        self.assertIn(
+            r"python .\scripts\build.py lckfb/szpi-esp32s3",
+            stderr.getvalue(),
+        )
+
+
 class VersionTests(unittest.TestCase):
     def test_parse_and_match(self):
         self.assertEqual(build._parse_version("ESP-IDF v6.0.1"), (6, 0, 1))
@@ -1033,6 +1076,14 @@ class CliTests(unittest.TestCase):
         self.assertIn("--list-boards", output.getvalue())
         self.assertIn("--list-languages", output.getvalue())
         self.assertIn("--list-wake-words", output.getvalue())
+        self.assertIn(
+            r". C:\Espressif\tools\Microsoft.v6.0.2.PowerShell_profile.ps1",
+            output.getvalue(),
+        )
+        self.assertIn(
+            r"python .\scripts\build.py lckfb/szpi-esp32s3",
+            output.getvalue(),
+        )
 
     def test_list_boards_prints_boards_and_multi_variants(self):
         output = io.StringIO()
