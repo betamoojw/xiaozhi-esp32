@@ -45,6 +45,9 @@ public:
     std::vector<KnxCommunicationObject> GetObjects(size_t offset, size_t limit) const;
     size_t GetObjectCount() const;
 
+    bool ImportConfiguration(const std::string& json_text, size_t& object_count,
+                             std::string& error);
+
     bool RequestRead(const std::string& group_address, std::string& error);
     bool WriteObject(const std::string& id, const std::string& value,
                      std::string& error);
@@ -74,6 +77,7 @@ private:
     void SetState(KnxServiceState state, const std::string& error = "");
 
     mutable std::mutex mutex_;
+    std::mutex import_mutex_;
     std::mutex transport_mutex_;
     std::vector<KnxCommunicationObject> objects_;
     KnxServiceState state_ = KnxServiceState::kDisabled;

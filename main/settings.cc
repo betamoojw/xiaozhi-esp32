@@ -46,6 +46,20 @@ void Settings::SetString(const std::string& key, const std::string& value) {
     }
 }
 
+esp_err_t Settings::SetStringAndCommit(const std::string& key, const std::string& value) {
+    if (!read_write_ || nvs_handle_ == 0) {
+        ESP_LOGW(TAG, "Namespace %s is not open for writing", ns_.c_str());
+        return ESP_ERR_INVALID_STATE;
+    }
+    esp_err_t result = nvs_set_str(nvs_handle_, key.c_str(), value.c_str());
+    if (result != ESP_OK) {
+        return result;
+    }
+    result = nvs_commit(nvs_handle_);
+    dirty_ = false;
+    return result;
+}
+
 int32_t Settings::GetInt(const std::string& key, int32_t default_value) {
     if (nvs_handle_ == 0) {
         return default_value;

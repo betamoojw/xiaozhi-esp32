@@ -148,4 +148,24 @@ void RegisterKnxMcpTools(McpServer& server) {
                 properties["value"].value<std::string>(), error), error);
             return true;
         });
+
+}
+
+void RegisterKnxUserOnlyMcpTools(McpServer& server) {
+    auto& manager = KnxManager::GetInstance();
+    server.AddUserOnlyTool("self.knx.import_configuration",
+        "Imports the complete KNX communication-object registry as JSON. The full payload is validated before it replaces the active registry, persisted in NVS, and applied by restarting KNX routing. This commissioning tool is visible only to the device owner, not the AI model.",
+        PropertyList({Property("configuration", kPropertyTypeString)}),
+        [&manager](const PropertyList& properties) -> ReturnValue {
+            size_t object_count = 0;
+            std::string error;
+            ThrowOnFailure(manager.ImportConfiguration(
+                properties["configuration"].value<std::string>(), object_count, error), error);
+            cJSON* json = cJSON_CreateObject();
+            cJSON_AddBoolToObject(json, "imported", true);
+            cJSON_AddBoolToObject(json, "persisted", true);
+            cJSON_AddNumberToObject(json, "object_count", object_count);
+            cJSON_AddStringToObject(json, "apply", "immediate");
+            return json;
+        });
 }

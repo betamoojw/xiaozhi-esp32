@@ -88,6 +88,18 @@ Object names and addresses are site configuration. The AI must not invent an
 ID or substitute a similarly named object without consulting the configured
 registry.
 
+## `self.knx.import_configuration`
+
+This owner-only commissioning tool is excluded from the AI tool audience. Its
+required `configuration` property is the complete object registry encoded as a
+JSON string. Validation and NVS persistence finish before the active registry
+is replaced. A successful import takes effect immediately by restarting the
+KNX routing transport; a failed import leaves the previous runtime and persisted
+configuration unchanged.
+
+Use [the configuration guide](knx_ip_configuration.md) for the schema, import
+procedure, size limits, and generic test registry.
+
 ## Error Behavior
 
 Validation and transport failures become MCP tool errors with a concise reason.

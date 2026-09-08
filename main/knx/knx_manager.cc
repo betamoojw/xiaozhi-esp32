@@ -1,8 +1,8 @@
 #include "knx_manager.h"
 
+#include "knx_config.h"
 #include "settings.h"
 
-#include <cJSON.h>
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <sdkconfig.h>
@@ -15,32 +15,37 @@ namespace {
 constexpr char kTag[] = "KNX_MGR";
 constexpr char kSettingsNamespace[] = "knx";
 constexpr char kObjectsKey[] = "objects";
-constexpr size_t kMaximumIdLength = 48;
-constexpr size_t kMaximumNameLength = 80;
-constexpr size_t kMaximumDescriptionLength = 192;
 
-bool JsonString(const cJSON* object, const char* name, std::string& value,
-                bool required, size_t maximum_length) {
-    const cJSON* item = cJSON_GetObjectItemCaseSensitive(object, name);
-    if (item == nullptr && !required) {
-        value.clear();
-        return true;
-    }
-    if (!cJSON_IsString(item) || item->valuestring == nullptr) {
-        return false;
-    }
-    value = item->valuestring;
-    return !value.empty() && value.size() <= maximum_length;
-}
 
-bool JsonBoolean(const cJSON* object, const char* name, bool& value) {
-    const cJSON* item = cJSON_GetObjectItemCaseSensitive(object, name);
-    if (!cJSON_IsBool(item)) {
-        return false;
+constexpr char kValidConfiguration[] = R"json([
+    {
+        "id": "test_switch_command",
+        "name": "Test Switch Command",
+        "description": "Generic writable boolean used for KNX integration testing",
+        "group_address": "1/0/1",
+        "datapoint_type": "DPT-1.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "test_switch_status",
+        "name": "Test Switch Status",
+        "description": "Generic boolean feedback used for KNX integration testing",
+        "group_address": "1/0/2",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_temperature",
+        "name": "Test Temperature",
+        "description": "Generic two-byte floating-point sensor used for KNX integration testing",
+        "group_address": "2/0/1",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": false
     }
-    value = cJSON_IsTrue(item);
-    return true;
-}
+])json";
 
 }  // namespace
 
@@ -76,74 +81,24 @@ bool KnxManager::Initialize() {
 bool KnxManager::LoadConfiguration() {
     Settings settings(kSettingsNamespace);
     const std::string json_text = settings.GetString(kObjectsKey, "[]");
-    cJSON* root = cJSON_ParseWithLength(json_text.c_str(), json_text.size());
-    if (!cJSON_IsArray(root)) {
-        cJSON_Delete(root);
-        last_error_ = "KNX object configuration must be a JSON array";
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+
+    // Use the default valid configuration if the stored JSON is empty.
+    const std::string effective_json = json_text.empty() ? kValidConfiguration : json_text;
+    if (!KnxParseConfiguration(effective_json, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
+                               CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects,
+                               canonical_json, last_error_)) {
         ESP_LOGE(kTag, "%s", last_error_.c_str());
         return false;
     }
-
-    bool valid = true;
-    const cJSON* item = nullptr;
-    cJSON_ArrayForEach(item, root) {
-        if (objects_.size() >= CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS ||
-            !cJSON_IsObject(item)) {
-            last_error_ = "KNX object configuration exceeds limits or contains a non-object";
-            valid = false;
-            break;
-        }
-        KnxCommunicationObject object;
-        std::string datapoint_type;
-        if (!JsonString(item, "id", object.id, true, kMaximumIdLength) ||
-            !JsonString(item, "name", object.name, true, kMaximumNameLength) ||
-            !JsonString(item, "description", object.description, false,
-                        kMaximumDescriptionLength) ||
-            !JsonString(item, "group_address", object.group_address, true, 10) ||
-            !JsonString(item, "datapoint_type", datapoint_type, true, 16) ||
-            !JsonBoolean(item, "readable", object.readable) ||
-            !JsonBoolean(item, "writable", object.writable) ||
-            !KnxParseGroupAddress(object.group_address, object.parsed_group_address) ||
-            !KnxParseDpt(datapoint_type, object.datapoint_type)) {
-            last_error_ = "Invalid KNX communication object configuration";
-            valid = false;
-            break;
-        }
-        object.group_address = KnxFormatGroupAddress(object.parsed_group_address);
-        std::string error;
-        if (!RegisterCommunicationObject(object, error)) {
-            last_error_ = error;
-            valid = false;
-            break;
-        }
-    }
-    cJSON_Delete(root);
-    if (valid) {
-        std::set<knx_address_t> unique_addresses;
-        for (const auto& object : objects_) {
-            unique_addresses.insert(object.parsed_group_address);
-        }
-        if (unique_addresses.size() > CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES) {
-            last_error_ = "KNX configuration exceeds component callback capacity";
-            valid = false;
-        }
-    }
-    if (!valid) {
-        objects_.clear();
-        ESP_LOGE(kTag, "%s", last_error_.c_str());
-    }
-    return valid;
+    objects_ = std::move(objects);
+    return true;
 }
 
 bool KnxManager::RegisterCommunicationObject(const KnxCommunicationObject& object,
                                              std::string& error) {
-    if (object.id.empty() || object.id.size() > kMaximumIdLength ||
-        object.name.empty() || object.name.size() > kMaximumNameLength ||
-        object.description.size() > kMaximumDescriptionLength ||
-        object.group_address != KnxFormatGroupAddress(object.parsed_group_address)) {
-        error = "Invalid KNX communication object";
-        return false;
-    }
+    std::lock_guard<std::mutex> lock(mutex_);
     const auto duplicate_id = std::find_if(objects_.begin(), objects_.end(),
         [&object](const auto& existing) { return existing.id == object.id; });
     if (duplicate_id != objects_.end()) {
@@ -154,12 +109,50 @@ bool KnxManager::RegisterCommunicationObject(const KnxCommunicationObject& objec
         [&object](const auto& existing) {
             return existing.parsed_group_address == object.parsed_group_address;
         });
-    if (duplicate_address != objects_.end() &&
-        duplicate_address->datapoint_type != object.datapoint_type) {
-        error = "Objects sharing a KNX group address must use the same DPT";
+    if (duplicate_address != objects_.end()) {
+        error = "Duplicate KNX group address: " + object.group_address;
         return false;
     }
     objects_.push_back(object);
+    return true;
+}
+
+bool KnxManager::ImportConfiguration(const std::string& json_text,
+                                     size_t& object_count, std::string& error) {
+    std::lock_guard<std::mutex> import_lock(import_mutex_);
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+    if (!KnxParseConfiguration(json_text, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
+                               CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects,
+                               canonical_json, error)) {
+        return false;
+    }
+
+    Settings settings(kSettingsNamespace, true);
+    const esp_err_t result = settings.SetStringAndCommit(kObjectsKey, canonical_json);
+    if (result != ESP_OK) {
+        error = std::string("Could not persist KNX configuration: ") +
+                esp_err_to_name(result);
+        return false;
+    }
+
+    bool network_available = false;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        objects_ = std::move(objects);
+        object_count = objects_.size();
+        configuration_valid_ = true;
+        last_error_.clear();
+        force_restart_ = true;
+        network_available = network_available_ && requested_netif_ != nullptr;
+        state_ = network_available ? KnxServiceState::kStarting
+                                   : KnxServiceState::kWaitingForNetwork;
+    }
+    if (network_available && lifecycle_task_ != nullptr) {
+        xTaskNotify(lifecycle_task_, kStartNotification, eSetBits);
+    }
+    ESP_LOGI(kTag, "Imported and persisted %u KNX communication objects",
+             static_cast<unsigned>(object_count));
     return true;
 }
 

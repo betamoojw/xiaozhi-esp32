@@ -133,6 +133,10 @@ void McpServer::AddCommonTools() {
 }
 
 void McpServer::AddUserOnlyTools() {
+#if CONFIG_XIAOZHI_KNX_IP
+    RegisterKnxUserOnlyMcpTools(*this);
+#endif
+
     // System tools
     AddUserOnlyTool("self.get_system_info",
         "Get the system information",
