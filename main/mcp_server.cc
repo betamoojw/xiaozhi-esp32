@@ -17,6 +17,9 @@
 #include "settings.h"
 #include "lvgl_theme.h"
 #include "lvgl_display.h"
+#if CONFIG_XIAOZHI_KNX_IP
+#include "knx_mcp_tools.h"
+#endif
 
 #define TAG "MCP"
 
@@ -38,6 +41,10 @@ void McpServer::AddCommonTools() {
     // Backup the original tools list and restore it after adding the common tools.
     auto original_tools = std::move(tools_);
     auto& board = Board::GetInstance();
+
+#if CONFIG_XIAOZHI_KNX_IP
+    RegisterKnxMcpTools(*this);
+#endif
 
     // Do not add custom tools here.
     // Custom tools must be added in the board's InitializeTools function.

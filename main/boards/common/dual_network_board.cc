@@ -81,6 +81,10 @@ NetworkInterface* DualNetworkBoard::GetNetwork() {
     return current_board_->GetNetwork();
 }
 
+esp_netif_obj* DualNetworkBoard::GetEspNetif() {
+    return current_board_->GetEspNetif();
+}
+
 const char* DualNetworkBoard::GetNetworkStateIcon() {
     return current_board_->GetNetworkStateIcon();
 }

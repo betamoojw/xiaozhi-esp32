@@ -10,6 +10,9 @@
 #include "system_info.h"
 #include "text_glyph_payload.h"
 #include "websocket_protocol.h"
+#if CONFIG_XIAOZHI_KNX_IP
+#include "knx_manager.h"
+#endif
 
 #include <driver/gpio.h>
 #include <esp_log.h>
@@ -99,6 +102,9 @@ void Application::Initialize() {
     esp_timer_start_periodic(clock_timer_handle_, 1000000);
 
     // Add MCP common tools (only once during initialization)
+#if CONFIG_XIAOZHI_KNX_IP
+    KnxManager::GetInstance().Initialize();
+#endif
     auto& mcp_server = McpServer::GetInstance();
     mcp_server.AddCommonTools();
     mcp_server.AddUserOnlyTools();
@@ -285,6 +291,9 @@ void Application::Run() {
 
 void Application::HandleNetworkConnectedEvent() {
     ESP_LOGI(TAG, "Network connected");
+#if CONFIG_XIAOZHI_KNX_IP
+    KnxManager::GetInstance().OnNetworkConnected(Board::GetInstance().GetEspNetif());
+#endif
     auto state = GetDeviceState();
 
     if (state == kDeviceStateStarting || state == kDeviceStateWifiConfiguring) {
@@ -311,6 +320,9 @@ void Application::HandleNetworkConnectedEvent() {
 }
 
 void Application::HandleNetworkDisconnectedEvent() {
+#if CONFIG_XIAOZHI_KNX_IP
+    KnxManager::GetInstance().OnNetworkDisconnected();
+#endif
     // Close current conversation when network disconnected
     auto state = GetDeviceState();
     if (state == kDeviceStateNotifying) {

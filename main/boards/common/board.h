@@ -46,6 +46,7 @@ using NetworkEventCallback = std::function<void(NetworkEvent event, const std::s
 void* create_board();
 class AudioCodec;
 class Display;
+struct esp_netif_obj;
 class Board {
 private:
     Board(const Board&) = delete; // 禁用拷贝构造函数
@@ -74,6 +75,7 @@ public:
     virtual Display* GetDisplay();
     virtual Camera* GetCamera();
     virtual NetworkInterface* GetNetwork() = 0;
+    virtual esp_netif_obj* GetEspNetif() { return nullptr; }
     virtual void StartNetwork() = 0;
     virtual void SetNetworkEventCallback(NetworkEventCallback callback) { (void)callback; }
     virtual const char* GetNetworkStateIcon() = 0;
