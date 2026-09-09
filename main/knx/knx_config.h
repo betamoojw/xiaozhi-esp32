@@ -7,6 +7,13 @@
 #include <vector>
 
 constexpr size_t kKnxMaximumConfigurationLength = 3999;
+constexpr char kKnxFilesystemRoot[] = "/spiffs";
+constexpr char kKnxConfigurationPath[] = "/spiffs/knx/config.json";
+
+bool KnxReadConfigurationFile(const char* path, std::string& json_text,
+                              std::string& error);
+bool KnxWriteConfigurationFile(const char* path, const std::string& json_text,
+                               std::string& error);
 
 bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
                            size_t maximum_group_addresses,

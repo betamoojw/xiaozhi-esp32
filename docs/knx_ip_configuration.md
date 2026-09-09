@@ -25,12 +25,18 @@ addresses (`area.line.member`) are accepted. Group ranges are 0..31, 0..7, and
 
 ## Object Registry
 
-Objects are stored in NVS namespace `knx`, string key `objects`. The value is a
-JSON array with a maximum serialized size of 3999 bytes. Provision it through
-the owner-only MCP tool `self.knx.import_configuration`. The tool validates the
-complete candidate registry, writes canonical JSON to NVS, atomically replaces
-the in-memory registry, and restarts KNX routing to bind callbacks to the new
-group addresses. No firmware rebuild or device reboot is required.
+Objects are stored as a JSON array in `/spiffs/knx/config.json`, with a maximum
+serialized size of 3999 bytes. SPIFFS must already be mounted at `/spiffs` and
+the file must exist before `KnxManager::Initialize()` runs. The KNX module
+never mounts or formats the filesystem. ESP-IDF SPIFFS uses a flat namespace;
+`knx/config.json` is therefore a virtual path rather than a real directory
+tree.
+
+Provision the file through FTP or through the owner-only MCP tool
+`self.knx.import_configuration`. The tool validates the complete candidate
+registry, atomically replaces `config.json`, updates the in-memory registry,
+and restarts KNX routing to bind callbacks to the new group addresses. No
+firmware rebuild or device reboot is required.
 
 Each entry requires:
 
@@ -75,13 +81,14 @@ Do not grant write access merely to make an AI command succeed.
   or create a site-specific JSON array using the schema above.
 2. Open an authenticated MCP client that can list tools with the `user`
   audience.
-3. Call `self.knx.import_configuration` with the complete JSON array encoded as
-  the string property `configuration`.
+3. Upload it to `/spiffs/knx/config.json` and reboot, or call
+  `self.knx.import_configuration` with the complete JSON array encoded as the
+  string property `configuration`.
 4. Confirm the response contains `imported: true`, `persisted: true`, and the
   expected `object_count`.
 5. Call `self.knx.list_objects` and `self.knx.get_status` to verify the active
   registry and routing state.
-6. Reboot the device and list the objects again to verify NVS persistence.
+6. Reboot the device and list the objects again to verify file persistence.
 
 Example MCP arguments using the test switch command:
 
@@ -114,9 +121,13 @@ them as current. Cache values are not persisted across reboot.
 - `KNX start failed`: inspect bind, multicast membership, IP, and port use.
 - `Invalid KNX communication object configuration`: validate every required
   field, address, DPT, boolean, length, and duplicate.
-- `Could not persist KNX configuration`: inspect NVS initialization, available
-  NVS space, and the 3999-byte serialized size limit. The active registry is
-  unchanged when persistence fails.
+- `SPIFFS filesystem is unavailable at /spiffs`: ensure the selected board
+  mounts SPIFFS before application initialization.
+- `Could not open KNX configuration file`: ensure
+  `/spiffs/knx/config.json` exists and is readable.
+- `Could not write/replace KNX configuration file`: inspect filesystem
+  permissions and free capacity. The active registry is unchanged when
+  persistence fails.
 - Values stay unknown: verify group responses/feedback are routed and use the
   configured address and DPT.
 - Reads do not complete synchronously: this is intentional; request a read and

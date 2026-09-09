@@ -1,6 +1,7 @@
 #include "knx_config.h"
 
 #include <cassert>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -93,6 +94,34 @@ void TestPermissionsAndLimits() {
     assert(!Parse(kValidConfiguration, 8, 1));
 }
 
+void TestConfigurationFileIo() {
+    constexpr char kPath[] = "knx_config_test.json";
+    std::string json_text;
+    std::string error;
+
+    std::remove(kPath);
+    assert(!KnxReadConfigurationFile(kPath, json_text, error));
+    assert(error.find("Could not open KNX configuration file") != std::string::npos);
+
+    assert(KnxWriteConfigurationFile(kPath, kValidConfiguration, error));
+    assert(KnxReadConfigurationFile(kPath, json_text, error));
+    assert(json_text == kValidConfiguration);
+
+    const std::string replacement = "[]";
+    assert(KnxWriteConfigurationFile(kPath, replacement, error));
+    assert(KnxReadConfigurationFile(kPath, json_text, error));
+    assert(json_text == replacement);
+
+    FILE* file = std::fopen(kPath, "wb");
+    assert(file != nullptr);
+    const std::string oversized(kKnxMaximumConfigurationLength + 1, 'x');
+    assert(std::fwrite(oversized.data(), 1, oversized.size(), file) == oversized.size());
+    assert(std::fclose(file) == 0);
+    assert(!KnxReadConfigurationFile(kPath, json_text, error));
+    assert(error == "KNX configuration file exceeds the size limit");
+    assert(std::remove(kPath) == 0);
+}
+
 }  // namespace
 
 int main() {
@@ -100,6 +129,7 @@ int main() {
     TestMalformedAndUnsupportedValues();
     TestAddressesAndIds();
     TestPermissionsAndLimits();
+    TestConfigurationFileIo();
     std::cout << "All KNX configuration tests passed\n";
     return 0;
 }

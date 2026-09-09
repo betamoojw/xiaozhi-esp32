@@ -3,13 +3,11 @@ idf_component_register(
         "test_knx_configuration.cc"
         "../../knx_config.cc"
         "../../knx_object.cc"
-        "../../../settings.cc"
     INCLUDE_DIRS
         "../.."
         "../../.."
     REQUIRES
         unity
         json
-        nvs_flash
         esp_knx_ip
 )

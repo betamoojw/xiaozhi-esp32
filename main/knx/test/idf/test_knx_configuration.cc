@@ -1,7 +1,5 @@
 #include "knx_config.h"
-#include "settings.h"
 
-#include <nvs_flash.h>
 #include <unity.h>
 
 #include <string>
@@ -117,20 +115,6 @@ TEST_CASE("KNX configuration enforces object limits", "[knx][configuration]") {
     TEST_ASSERT_FALSE(Parse(kValidConfiguration, 1, objects, error));
 }
 
-TEST_CASE("KNX configuration persists across Settings reopen", "[knx][configuration]") {
-    TEST_ASSERT_EQUAL(ESP_OK, nvs_flash_init());
-    {
-        Settings settings("knx_test", true);
-        TEST_ASSERT_EQUAL(ESP_OK,
-                          settings.SetStringAndCommit("objects", kValidConfiguration));
-    }
-    {
-        Settings settings("knx_test");
-        TEST_ASSERT_EQUAL_STRING(kValidConfiguration,
-                                 settings.GetString("objects").c_str());
-    }
-    {
-        Settings settings("knx_test", true);
-        settings.EraseAll();
-    }
+TEST_CASE("KNX configuration uses the SPIFFS registry path", "[knx][configuration]") {
+    TEST_ASSERT_EQUAL_STRING("/spiffs/knx/config.json", kKnxConfigurationPath);
 }

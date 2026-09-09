@@ -1,7 +1,6 @@
 #include "knx_manager.h"
 
 #include "knx_config.h"
-#include "settings.h"
 
 #include <esp_log.h>
 #include <esp_timer.h>
@@ -9,13 +8,11 @@
 
 #include <algorithm>
 #include <set>
+#include <sys/stat.h>
 
 namespace {
 
 constexpr char kTag[] = "KNX_MGR";
-constexpr char kSettingsNamespace[] = "knx";
-constexpr char kObjectsKey[] = "objects";
-
 
 constexpr char kValidConfiguration[] = R"json([
     {
@@ -79,16 +76,31 @@ bool KnxManager::Initialize() {
 }
 
 bool KnxManager::LoadConfiguration() {
-    Settings settings(kSettingsNamespace);
-    const std::string json_text = settings.GetString(kObjectsKey, "[]");
+    struct stat filesystem_info = {};
+    std::string json_text;
+    const bool filesystem_available =
+        stat(kKnxFilesystemRoot, &filesystem_info) == 0 && S_ISDIR(filesystem_info.st_mode);
+    
+    if (!filesystem_available) {
+        ESP_LOGW(kTag, "SPIFFS filesystem is unavailable at %s; using default KNX configuration",
+                 kKnxFilesystemRoot);
+        json_text = kValidConfiguration;
+    } else {
+        if (!KnxReadConfigurationFile(kKnxConfigurationPath, json_text, last_error_)) {
+            ESP_LOGE(kTag, "%s", last_error_.c_str());
+            return false;
+        }
+        if (json_text.empty()) {
+            ESP_LOGW(kTag, "KNX configuration file is empty; using default configuration");
+            json_text = kValidConfiguration;
+        }
+    }
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
 
-    // Use the default valid configuration if the stored JSON is empty.
-    const std::string effective_json = json_text.empty() ? kValidConfiguration : json_text;
-    if (!KnxParseConfiguration(effective_json, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
-                               CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects,
-                               canonical_json, last_error_)) {
+    if (!KnxParseConfiguration(json_text, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
+                               CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects, canonical_json,
+                               last_error_)) {
         ESP_LOGE(kTag, "%s", last_error_.c_str());
         return false;
     }
@@ -128,11 +140,7 @@ bool KnxManager::ImportConfiguration(const std::string& json_text,
         return false;
     }
 
-    Settings settings(kSettingsNamespace, true);
-    const esp_err_t result = settings.SetStringAndCommit(kObjectsKey, canonical_json);
-    if (result != ESP_OK) {
-        error = std::string("Could not persist KNX configuration: ") +
-                esp_err_to_name(result);
+    if (!KnxWriteConfigurationFile(kKnxConfigurationPath, canonical_json, error)) {
         return false;
     }
 

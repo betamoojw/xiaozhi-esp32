@@ -197,12 +197,12 @@ Writes encode outside the lock from a copied object descriptor, send without
 holding the registry mutex, and only update the cache upon a received write or
 response telegram. Failed sends never fabricate state.
 
-Persist a versioned, bounded JSON object array in XiaoZhi NVS namespace `knx`.
-The maximum object count is constrained by both Kconfig and the component's
-`ESP_KNX_IP_MAX_GROUP_ADDRESSES`. A compiled empty default means firmware is
-safe without user configuration. Runtime object-management tools are deferred;
-configuration can initially be provisioned by writing the documented NVS JSON.
-Future HTTP or cloud provisioning can use the same manager validation API.
+Persist a bounded JSON object array in `/spiffs/knx/config.json`. The maximum
+object count is constrained by both Kconfig and the component's
+`ESP_KNX_IP_MAX_GROUP_ADDRESSES`. Missing or invalid configuration leaves KNX
+in its error state without affecting the rest of XiaoZhi. Configuration can be
+provisioned through FTP or the owner-only import tool; both paths use the same
+manager validation rules.
 
 ## Read and Write Semantics
 

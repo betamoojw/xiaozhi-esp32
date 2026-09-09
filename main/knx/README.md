@@ -19,10 +19,12 @@ and updates the mutex-protected cache. Socket start, stop, and restart run on
 the `knx_lifecycle` task. MCP reads return cached state and group reads are
 asynchronous, so XiaoZhi's main task never waits for a KNX response.
 
-Commissioning uses the owner-only `self.knx.import_configuration` MCP tool.
-Validated canonical JSON is committed to the existing XiaoZhi NVS `Settings`
-store before the active registry is changed. Successful imports are applied
-immediately and survive reboot.
+The communication-object registry is loaded from
+`/spiffs/knx/config.json` during manager initialization. Commissioning can
+upload that file through FTP or use the owner-only
+`self.knx.import_configuration` MCP tool. MCP imports validate the complete
+registry and atomically replace the same file before changing the active
+registry. Successful imports are applied immediately and survive reboot.
 
 See [the integration guide](../../docs/knx_ip_integration.md),
 [configuration reference](../../docs/knx_ip_configuration.md), and

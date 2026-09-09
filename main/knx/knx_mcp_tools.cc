@@ -154,7 +154,7 @@ void RegisterKnxMcpTools(McpServer& server) {
 void RegisterKnxUserOnlyMcpTools(McpServer& server) {
     auto& manager = KnxManager::GetInstance();
     server.AddUserOnlyTool("self.knx.import_configuration",
-        "Imports the complete KNX communication-object registry as JSON. The full payload is validated before it replaces the active registry, persisted in NVS, and applied by restarting KNX routing. This commissioning tool is visible only to the device owner, not the AI model.",
+        "Imports the complete KNX communication-object registry as JSON. The full payload is validated before it atomically replaces /spiffs/knx/config.json and the active registry, then restarts KNX routing. This commissioning tool is visible only to the device owner, not the AI model.",
         PropertyList({Property("configuration", kPropertyTypeString)}),
         [&manager](const PropertyList& properties) -> ReturnValue {
             size_t object_count = 0;
