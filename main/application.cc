@@ -13,6 +13,9 @@
 #if CONFIG_XIAOZHI_KNX_IP
 #include "knx_manager.h"
 #endif
+#if CONFIG_XIAOZHI_FTP_SERVER
+#include "ftp_server.h"
+#endif
 
 #include <driver/gpio.h>
 #include <esp_log.h>
@@ -294,6 +297,9 @@ void Application::HandleNetworkConnectedEvent() {
 #if CONFIG_XIAOZHI_KNX_IP
     KnxManager::GetInstance().OnNetworkConnected(Board::GetInstance().GetEspNetif());
 #endif
+#if CONFIG_XIAOZHI_FTP_SERVER
+    FtpServerManager::GetInstance().OnNetworkConnected(Board::GetInstance().GetEspNetif());
+#endif
     auto state = GetDeviceState();
 
     if (state == kDeviceStateStarting || state == kDeviceStateWifiConfiguring) {
@@ -322,6 +328,9 @@ void Application::HandleNetworkConnectedEvent() {
 void Application::HandleNetworkDisconnectedEvent() {
 #if CONFIG_XIAOZHI_KNX_IP
     KnxManager::GetInstance().OnNetworkDisconnected();
+#endif
+#if CONFIG_XIAOZHI_FTP_SERVER
+    FtpServerManager::GetInstance().OnNetworkDisconnected();
 #endif
     // Close current conversation when network disconnected
     auto state = GetDeviceState();

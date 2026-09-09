@@ -1046,6 +1046,33 @@ menu "KNX/IP Configuration"
 
 endmenu
 
+menu "FTP Server Configuration"
+
+    config XIAOZHI_FTP_SERVER
+        bool "Enable FTP server"
+        default n
+        help
+            Expose the filesystem mounted by the selected board over FTP.
+            The server starts when networking is connected and stops when it
+            disconnects. The upstream espp/ftp component does not enforce
+            authentication, so enable this only on a trusted network.
+
+    config XIAOZHI_FTP_SERVER_PORT
+        int "FTP control port"
+        range 1 65535
+        default 21
+        depends on XIAOZHI_FTP_SERVER
+
+    config XIAOZHI_FTP_SERVER_ROOT
+        string "FTP filesystem root"
+        default "/spiffs"
+        depends on XIAOZHI_FTP_SERVER
+        help
+            Absolute path of an existing mounted ESP VFS filesystem. The FTP
+            server never mounts, formats, or unmounts this filesystem.
+
+endmenu
+
 menu "Camera Configuration"
     depends on !IDF_TARGET_ESP32
 

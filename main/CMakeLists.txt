@@ -55,6 +55,11 @@ if(CONFIG_XIAOZHI_KNX_IP)
     list(APPEND INCLUDE_DIRS "knx")
 endif()
 
+if(CONFIG_XIAOZHI_FTP_SERVER)
+    list(APPEND SOURCES "ftp_server/ftp_server.cc")
+    list(APPEND INCLUDE_DIRS "ftp_server")
+endif()
+
 # Add board common files
 list(APPEND SOURCES
     "boards/common/board.cc"

@@ -5,6 +5,8 @@ dependencies:
     path: components/esp_knx_ip
     version: 781faca714948c4bc081f3319a5eddbcccd5be9f
 
+  espp/ftp: ^1.0.0
+
   waveshare/esp_lcd_sh8601: 1.0.2
   espressif/esp_lcd_co5300: ^2.0.3
   espressif/esp_lcd_ili9341: ^2.0.2
