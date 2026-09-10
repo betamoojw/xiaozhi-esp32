@@ -115,6 +115,7 @@ TEST_CASE("KNX configuration enforces object limits", "[knx][configuration]") {
     TEST_ASSERT_FALSE(Parse(kValidConfiguration, 1, objects, error));
 }
 
-TEST_CASE("KNX configuration uses the SPIFFS registry path", "[knx][configuration]") {
-    TEST_ASSERT_EQUAL_STRING("/spiffs/knx/config.json", kKnxConfigurationPath);
+TEST_CASE("KNX configuration uses the asset interface registry path", "[knx][configuration]") {
+  TEST_ASSERT_EQUAL_STRING("assets/interfaces/knxConfig.json",
+               kKnxConfigurationPath);
 }

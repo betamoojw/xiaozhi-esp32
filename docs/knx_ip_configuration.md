@@ -25,12 +25,10 @@ addresses (`area.line.member`) are accepted. Group ranges are 0..31, 0..7, and
 
 ## Object Registry
 
-Objects are stored as a JSON array in `/spiffs/knx/config.json`, with a maximum
-serialized size of 3999 bytes. SPIFFS must already be mounted at `/spiffs` and
-the file must exist before `KnxManager::Initialize()` runs. The KNX module
-never mounts or formats the filesystem. ESP-IDF SPIFFS uses a flat namespace;
-`knx/config.json` is therefore a virtual path rather than a real directory
-tree.
+Objects are stored as a JSON array in `assets/interfaces/knxConfig.json`, with
+a maximum serialized size of 3999 bytes. The `assets/interfaces` directory
+must be available and the file must exist before `KnxManager::Initialize()`
+runs.
 
 Provision the file through FTP or through the owner-only MCP tool
 `self.knx.import_configuration`. The tool validates the complete candidate
@@ -81,7 +79,7 @@ Do not grant write access merely to make an AI command succeed.
   or create a site-specific JSON array using the schema above.
 2. Open an authenticated MCP client that can list tools with the `user`
   audience.
-3. Upload it to `/spiffs/knx/config.json` and reboot, or call
+3. Upload it to `assets/interfaces/knxConfig.json` and reboot, or call
   `self.knx.import_configuration` with the complete JSON array encoded as the
   string property `configuration`.
 4. Confirm the response contains `imported: true`, `persisted: true`, and the
@@ -121,10 +119,10 @@ them as current. Cache values are not persisted across reboot.
 - `KNX start failed`: inspect bind, multicast membership, IP, and port use.
 - `Invalid KNX communication object configuration`: validate every required
   field, address, DPT, boolean, length, and duplicate.
-- `SPIFFS filesystem is unavailable at /spiffs`: ensure the selected board
-  mounts SPIFFS before application initialization.
+- `KNX configuration directory is unavailable`: ensure `assets/interfaces`
+  is available before application initialization.
 - `Could not open KNX configuration file`: ensure
-  `/spiffs/knx/config.json` exists and is readable.
+  `assets/interfaces/knxConfig.json` exists and is readable.
 - `Could not write/replace KNX configuration file`: inspect filesystem
   permissions and free capacity. The active registry is unchanged when
   persistence fails.

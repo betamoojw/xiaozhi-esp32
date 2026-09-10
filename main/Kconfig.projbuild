@@ -1006,7 +1006,7 @@ menu "KNX/IP Configuration"
 
     config XIAOZHI_KNX_IP
         bool "Enable KNXnet/IP routing"
-        default n
+        default y
         help
             Enable KNX communication-object access over an existing Wi-Fi or
             Ethernet connection. Only KNXnet/IP routing is supported.
@@ -1041,7 +1041,7 @@ menu "KNX/IP Configuration"
 
     config XIAOZHI_KNX_IP_DEBUG
         bool "Enable verbose KNX manager logging"
-        default n
+        default y
         depends on XIAOZHI_KNX_IP
 
 endmenu
@@ -1050,7 +1050,7 @@ menu "FTP Server Configuration"
 
     config XIAOZHI_FTP_SERVER
         bool "Enable FTP server"
-        default n
+        default y
         help
             Expose the filesystem mounted by the selected board over FTP.
             The server starts when networking is connected and stops when it
@@ -1065,11 +1065,11 @@ menu "FTP Server Configuration"
 
     config XIAOZHI_FTP_SERVER_ROOT
         string "FTP filesystem root"
-        default "/spiffs"
+        default "assets"
         depends on XIAOZHI_FTP_SERVER
         help
-            Absolute path of an existing mounted ESP VFS filesystem. The FTP
-            server never mounts, formats, or unmounts this filesystem.
+            Path of the existing assets VFS filesystem. The FTP server never
+            mounts, formats, or unmounts this filesystem.
 
 endmenu
 

@@ -28,7 +28,7 @@ still required for each release variant.
 ## Lifecycle
 
 1. XiaoZhi initializes storage, UI, audio, and MCP.
-2. `KnxManager` loads and validates `/spiffs/knx/config.json` and starts a
+2. `KnxManager` loads and validates `assets/interfaces/knxConfig.json` and starts a
    low-priority lifecycle task.
 3. The selected board establishes Wi-Fi or Ethernet as usual.
 4. On a connected event, XiaoZhi passes the board's existing native netif to

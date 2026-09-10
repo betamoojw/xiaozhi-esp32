@@ -1,0 +1,218 @@
+[
+    {
+        "id": "test_switch_command",
+        "name": "Test Switch Command",
+        "description": "Generic writable boolean used for KNX integration testing",
+        "group_address": "1/0/1",
+        "datapoint_type": "DPT-1.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "test_switch_status",
+        "name": "Test Switch Status",
+        "description": "Generic boolean feedback used for KNX integration testing",
+        "group_address": "1/0/2",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_temperature",
+        "name": "Test Temperature",
+        "description": "Generic two-byte floating-point sensor used for KNX integration testing",
+        "group_address": "2/0/1",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_switch_command_2",
+        "name": "Test Switch Command 2",
+        "description": "Generic writable boolean for DPT-1.001 testing",
+        "group_address": "1/0/3",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_percentage",
+        "name": "Test Percentage",
+        "description": "Generic 1-byte unsigned percentage value",
+        "group_address": "3/0/1",
+        "datapoint_type": "DPT-5.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_angle",
+        "name": "Test Angle",
+        "description": "Generic 1-byte unsigned angle value",
+        "group_address": "3/0/2",
+        "datapoint_type": "DPT-5.003",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_counter",
+        "name": "Test Counter",
+        "description": "Generic 1-byte unsigned counter",
+        "group_address": "3/0/3",
+        "datapoint_type": "DPT-5.010",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_temperature_celsius",
+        "name": "Test Temperature Celsius",
+        "description": "Generic 2-byte floating-point temperature sensor",
+        "group_address": "2/0/2",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_humidity",
+        "name": "Test Relative Humidity",
+        "description": "Generic 2-byte floating-point relative humidity sensor",
+        "group_address": "2/0/3",
+        "datapoint_type": "DPT-9.007",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_illuminance",
+        "name": "Test Illuminance",
+        "description": "Generic 2-byte floating-point illuminance sensor",
+        "group_address": "2/0/4",
+        "datapoint_type": "DPT-9.004",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_wind_speed",
+        "name": "Test Wind Speed",
+        "description": "Generic 2-byte floating-point wind speed value",
+        "group_address": "2/0/5",
+        "datapoint_type": "DPT-9.005",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_pressure",
+        "name": "Test Pressure",
+        "description": "Generic 2-byte floating-point pressure value",
+        "group_address": "2/0/6",
+        "datapoint_type": "DPT-9.006",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_time",
+        "name": "Test Time",
+        "description": "Generic KNX time value",
+        "group_address": "4/0/1",
+        "datapoint_type": "DPT-10.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_date",
+        "name": "Test Date",
+        "description": "Generic KNX date value",
+        "group_address": "4/0/2",
+        "datapoint_type": "DPT-11.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_date_time",
+        "name": "Test Date Time",
+        "description": "Generic KNX date and time value",
+        "group_address": "4/0/3",
+        "datapoint_type": "DPT-19.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_scene_number",
+        "name": "Test Scene Number",
+        "description": "Generic 1-byte scene number",
+        "group_address": "5/0/1",
+        "datapoint_type": "DPT-17.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_scene_control",
+        "name": "Test Scene Control",
+        "description": "Generic scene control command",
+        "group_address": "5/0/2",
+        "datapoint_type": "DPT-18.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_uint16",
+        "name": "Test Unsigned 16 Bit",
+        "description": "Generic 2-byte unsigned integer",
+        "group_address": "6/0/1",
+        "datapoint_type": "DPT-7.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_int16",
+        "name": "Test Signed 16 Bit",
+        "description": "Generic 2-byte signed integer",
+        "group_address": "6/0/2",
+        "datapoint_type": "DPT-8.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_uint32",
+        "name": "Test Unsigned 32 Bit",
+        "description": "Generic 4-byte unsigned integer",
+        "group_address": "7/0/1",
+        "datapoint_type": "DPT-12.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_int32",
+        "name": "Test Signed 32 Bit",
+        "description": "Generic 4-byte signed integer",
+        "group_address": "7/0/2",
+        "datapoint_type": "DPT-13.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_float32",
+        "name": "Test IEEE Float",
+        "description": "Generic 4-byte IEEE 754 floating-point value",
+        "group_address": "7/0/3",
+        "datapoint_type": "DPT-14.056",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_string",
+        "name": "Test String",
+        "description": "Generic KNX 14-character ASCII string",
+        "group_address": "8/0/1",
+        "datapoint_type": "DPT-16.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "test_color_rgb",
+        "name": "Test RGB Color",
+        "description": "Generic RGB color value",
+        "group_address": "8/0/2",
+        "datapoint_type": "DPT-232.600",
+        "readable": true,
+        "writable": true
+    }
+]

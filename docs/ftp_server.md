@@ -13,18 +13,14 @@ Open `Xiaozhi Assistant -> FTP Server Configuration` in menuconfig.
 | --- | --- | --- |
 | `CONFIG_XIAOZHI_FTP_SERVER` | off | Compile and enable the FTP server |
 | `CONFIG_XIAOZHI_FTP_SERVER_PORT` | `21` | FTP control port |
-| `CONFIG_XIAOZHI_FTP_SERVER_ROOT` | `/spiffs` | Root of an existing mounted VFS filesystem |
+| `CONFIG_XIAOZHI_FTP_SERVER_ROOT` | `assets` | Root of the existing assets VFS filesystem |
 
-The configured root must be an absolute path that exists and is a directory
-before the network-connected event. The FTP feature deliberately does not
-mount, format, or unmount storage. A missing mount is logged and leaves the
-rest of the application running normally.
-
-Do not configure the FTP root as XiaoZhi's `assets` partition. Despite its
-partition subtype, `assets` contains the project's packed mmap asset format and
-is not a writable SPIFFS VFS filesystem. Mounting or formatting it as SPIFFS
-would destroy the fonts, models, and display assets used by the application.
-No partition table is changed by this feature.
+The configured `assets` root must exist as a VFS directory before the
+network-connected event. The FTP feature deliberately does not mount, format,
+or unmount storage. A missing mount is logged and leaves the rest of the
+application running normally. The selected board is responsible for exposing
+the path without overwriting the packed assets partition used by the
+application. No partition table is changed by this feature.
 
 ## FileZilla
 

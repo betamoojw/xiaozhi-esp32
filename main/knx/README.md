@@ -20,7 +20,7 @@ the `knx_lifecycle` task. MCP reads return cached state and group reads are
 asynchronous, so XiaoZhi's main task never waits for a KNX response.
 
 The communication-object registry is loaded from
-`/spiffs/knx/config.json` during manager initialization. Commissioning can
+`assets/interfaces/knxConfig.json` during manager initialization. Commissioning can
 upload that file through FTP or use the owner-only
 `self.knx.import_configuration` MCP tool. MCP imports validate the complete
 registry and atomically replace the same file before changing the active

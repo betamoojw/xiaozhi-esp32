@@ -1,0 +1,339 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/knx-device.schema.json",
+  "title": "KNX Device Configuration",
+  "description": "JSON Schema for a KNX device, its communication medium parameters, physical address, and communication objects.",
+  "type": "object",
+  "required": [
+    "media_type",
+    "media_parameters",
+    "physical_address",
+    "communication_objects"
+  ],
+  "properties": {
+    "media_type": {
+      "type": "string",
+      "description": "KNX communication medium.",
+      "enum": [
+        "knx_tp",
+        "knx_ip",
+        "knx_rf"
+      ]
+    },
+    "media_parameters": {
+      "description": "Parameters specific to the selected KNX medium.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/knxTpMediaParameters"
+        },
+        {
+          "$ref": "#/$defs/knxIpMediaParameters"
+        },
+        {
+          "$ref": "#/$defs/knxRfMediaParameters"
+        },
+        {
+          "type": "object",
+          "description": "Fallback object for a future media type. Application code must validate its contents according to the media_type.",
+          "additionalProperties": true
+        }
+      ]
+    },
+    "physical_address": {
+      "$ref": "#/$defs/physicalAddress"
+    },
+    "communication_objects": {
+      "type": "array",
+      "description": "Communication objects exposed by the device.",
+      "items": {
+        "$ref": "#/$defs/communicationObject"
+      },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "media_type": {
+            "const": "knx_tp"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "media_parameters": {
+            "$ref": "#/$defs/knxTpMediaParameters"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "media_type": {
+            "const": "knx_ip"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "media_parameters": {
+            "$ref": "#/$defs/knxIpMediaParameters"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "media_type": {
+            "const": "knx_rf"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "media_parameters": {
+            "$ref": "#/$defs/knxRfMediaParameters"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "physicalAddress": {
+      "type": "string",
+      "description": "KNX individual address in area.line.device notation. Area and line are 0-15; device is 0-255.",
+      "pattern": "^(?:0|[1-9]|1[0-5])\\.(?:0|[1-9]|1[0-5])\\.(?:0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])$",
+      "examples": [
+        "1.2.15",
+        "0.0.1"
+      ]
+    },
+    "groupAddress": {
+      "type": "string",
+      "description": "KNX three-level group address in main/middle/subgroup notation. Main and middle are 0-31; subgroup is 0-255.",
+      "pattern": "^(?:0|[1-9]|[12][0-9]|3[01])\\.(?:0|[1-9]|[12][0-9]|3[01])\\.(?:0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])$",
+      "examples": [
+        "2.1.10",
+        "0.0.1"
+      ]
+    },
+    "dpt": {
+      "type": "string",
+      "description": "KNX Datapoint Type identifier. Canonical form is DPT-main.subtype, e.g. DPT-1.001.",
+      "pattern": "^DPT-[0-9]{1,2}\\.[0-9]{3}$",
+      "examples": [
+        "DPT-1.001",
+        "DPT-5.001",
+        "DPT-9.001",
+        "DPT-14.000"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "Timestamp of the most recent current_value update, represented as an RFC 3339 date-time.",
+      "format": "date-time"
+    },
+    "knxTpMediaParameters": {
+      "type": "object",
+      "description": "KNX Twisted Pair parameters. These describe TP topology/configuration and deliberately do not repeat the device physical address.",
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "coupler_role": {
+          "type": "string",
+          "enum": [
+            "none",
+            "line_coupler",
+            "area_coupler",
+            "repeater"
+          ]
+        },
+        "topology": {
+          "type": "string",
+          "enum": [
+            "standard",
+            "free_topology"
+          ],
+          "default": "standard"
+        },
+        "segment": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        }
+      },
+      "additionalProperties": true
+    },
+    "knxIpMediaParameters": {
+      "type": "object",
+      "description": "KNXnet/IP parameters.",
+      "required": [
+        "ip_address",
+        "port",
+        "transport_mode"
+      ],
+      "properties": {
+        "ip_address": {
+          "type": "string",
+          "description": "IPv4 or IPv6 address.",
+          "anyOf": [
+            {
+              "format": "ipv4"
+            },
+            {
+              "format": "ipv6"
+            }
+          ]
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "transport_mode": {
+          "type": "string",
+          "enum": [
+            "tunneling",
+            "routing"
+          ]
+        },
+        "interface_identifier": {
+          "type": "string",
+          "description": "Optional identifier for a local KNXnet/IP interface or logical interface."
+        },
+        "individual_address": {
+          "type": "string",
+          "description": "Optional KNXnet/IP interface-assigned individual address only when required by an implementation; normally omit because physical_address is authoritative.",
+          "pattern": "^(?:0|[1-9]|1[0-5])\\.(?:0|[1-9]|1[0-5])\\.(?:0|[1-9][0-9]?|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
+        },
+        "host": {
+          "type": "string"
+        },
+        "multicast_address": {
+          "type": "string"
+        },
+        "nat": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "knxRfMediaParameters": {
+      "type": "object",
+      "description": "KNX RF parameters. Exact RF parameters vary with RF system/profile and implementation.",
+      "properties": {
+        "rf_domain_address": {
+          "type": "string",
+          "description": "RF domain identifier, represented as an opaque string to avoid assuming one RF implementation encoding.",
+          "minLength": 1
+        },
+        "channel": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "system_mode",
+            "ready_mode",
+            "other"
+          ]
+        },
+        "repeaters_enabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "currentValue": {
+      "description": "Most recently known KNX value. Primitive JSON values are used for scalar DPTs; arrays/objects are available for compound DPTs. Null means no value is available yet. The valid flag determines whether the value is semantically usable.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": true
+        }
+      ]
+    },
+    "communicationObject": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "description",
+        "group_address",
+        "datapoint_type",
+        "readable",
+        "writable",
+        "current_value",
+        "valid",
+        "last_update_timestamp"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the communication object within this device.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable communication object name.",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description. Required for a stable object shape, but may be an empty string when no description is available.",
+          "maxLength": 2000
+        },
+        "group_address": {
+          "$ref": "#/$defs/groupAddress"
+        },
+        "datapoint_type": {
+          "$ref": "#/$defs/dpt"
+        },
+        "readable": {
+          "type": "boolean"
+        },
+        "writable": {
+          "type": "boolean"
+        },
+        "current_value": {
+          "$ref": "#/$defs/currentValue"
+        },
+        "valid": {
+          "type": "boolean"
+        },
+        "last_update_timestamp": {
+          "$ref": "#/$defs/timestamp"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

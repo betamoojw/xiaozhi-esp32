@@ -76,14 +76,15 @@ bool KnxManager::Initialize() {
 }
 
 bool KnxManager::LoadConfiguration() {
-    struct stat filesystem_info = {};
+    struct stat directory_info = {};
     std::string json_text;
-    const bool filesystem_available =
-        stat(kKnxFilesystemRoot, &filesystem_info) == 0 && S_ISDIR(filesystem_info.st_mode);
+    const bool configuration_directory_available =
+        stat(kKnxConfigurationDirectory, &directory_info) == 0 &&
+        S_ISDIR(directory_info.st_mode);
     
-    if (!filesystem_available) {
-        ESP_LOGW(kTag, "SPIFFS filesystem is unavailable at %s; using default KNX configuration",
-                 kKnxFilesystemRoot);
+    if (!configuration_directory_available) {
+        ESP_LOGW(kTag, "KNX configuration directory is unavailable at %s; using default KNX configuration",
+                 kKnxConfigurationDirectory);
         json_text = kValidConfiguration;
     } else {
         if (!KnxReadConfigurationFile(kKnxConfigurationPath, json_text, last_error_)) {

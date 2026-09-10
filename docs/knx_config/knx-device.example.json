@@ -1,0 +1,68 @@
+{
+  "media_type": "knx_ip",
+  "media_parameters": {
+    "ip_address": "192.168.10.25",
+    "port": 3671,
+    "transport_mode": "tunneling",
+    "interface_identifier": "KNX-IP-Interface-1",
+    "nat": false
+  },
+  "physical_address": "1.2.15",
+  "communication_objects": [
+    {
+      "id": "switch_living_room",
+      "name": "Living Room Light Switch",
+      "description": "On/off command for the main living room light.",
+      "group_address": "1.0.1",
+      "datapoint_type": "DPT-1.001",
+      "readable": true,
+      "writable": true,
+      "current_value": true,
+      "valid": true,
+      "last_update_timestamp": "2026-09-09T20:30:12-05:00",
+      "unit": null,
+      "tags": [
+        "lighting",
+        "living_room"
+      ]
+    },
+    {
+      "id": "living_room_dimming",
+      "name": "Living Room Brightness",
+      "description": "Relative dimming value.",
+      "group_address": "1.0.2",
+      "datapoint_type": "DPT-5.001",
+      "readable": true,
+      "writable": true,
+      "current_value": 72.5,
+      "valid": true,
+      "last_update_timestamp": "2026-09-09T20:30:15-05:00",
+      "unit": "%"
+    },
+    {
+      "id": "living_room_temperature",
+      "name": "Living Room Temperature",
+      "description": "Measured room temperature.",
+      "group_address": "9.0.1",
+      "datapoint_type": "DPT-9.001",
+      "readable": true,
+      "writable": false,
+      "current_value": 21.7,
+      "valid": true,
+      "last_update_timestamp": "2026-09-09T20:29:58-05:00",
+      "unit": "\u00b0C"
+    },
+    {
+      "id": "scene",
+      "name": "Living Room Scene",
+      "description": "Scene number recalled by the room controller.",
+      "group_address": "1.0.3",
+      "datapoint_type": "DPT-17.001",
+      "readable": true,
+      "writable": true,
+      "current_value": 3,
+      "valid": true,
+      "last_update_timestamp": "2026-09-09T20:30:20-05:00"
+    }
+  ]
+}
