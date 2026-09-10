@@ -69,6 +69,7 @@ void Assets::UnApplyPartition() {
 }
 
 void Assets::UseBuiltInTextFontCapability() {
+#if HAVE_LVGL
     text_font_capability_ = {
         .glyph_push = true,
         .bundle = NOTO_FONT_BUNDLE_ID,
@@ -76,6 +77,11 @@ void Assets::UseBuiltInTextFontCapability() {
         .size = TEXT_FONT_SIZE,
         .bpp = TEXT_FONT_BPP,
     };
+#else
+    // Emote does not consume pushed glyphs; advertising charset=basic makes
+    // the server embed a bitmap for every CJK character and inflates MQTT.
+    text_font_capability_ = {};
+#endif
 }
 
 void Assets::DisableTextFontGlyphPush() { text_font_capability_ = {}; }
@@ -151,35 +157,52 @@ bool Assets::LvglStrategy::InitializePartition(Assets* assets) {
         return false;
     }
 
-    int free_pages = spi_flash_mmap_get_free_pages(SPI_FLASH_MMAP_DATA);
-    uint32_t storage_size = free_pages * 64 * 1024;
-    ESP_LOGI(TAG, "The storage free size is %ld KB", storage_size / 1024);
-    ESP_LOGI(TAG, "The partition size is %ld KB", assets->partition_->size / 1024);
-    if (storage_size < assets->partition_->size) {
-        ESP_LOGE(TAG, "The free size %ld KB is less than assets partition required %ld KB",
-                 storage_size / 1024, assets->partition_->size / 1024);
+    // Read the header first so we only mmap the payload in use. On ESP32-C3 the
+    // free MMU data pages can be smaller than a full 1MB assets partition even
+    // when the packed assets.bin itself fits.
+    uint8_t header[12] = {};
+    esp_err_t err = esp_partition_read(assets->partition_, 0, header, sizeof(header));
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to read assets header: %s", esp_err_to_name(err));
         return false;
     }
 
-    esp_err_t err =
-        esp_partition_mmap(assets->partition_, 0, assets->partition_->size, ESP_PARTITION_MMAP_DATA,
-                           (const void**)&mmap_root_, &mmap_handle_);
+    uint32_t stored_files = *(uint32_t*)(header + 0);
+    uint32_t stored_chksum = *(uint32_t*)(header + 4);
+    uint32_t stored_len = *(uint32_t*)(header + 8);
+
+    if (stored_len == 0 || stored_len > assets->partition_->size - 12) {
+        ESP_LOGD(TAG, "The stored_len (0x%lx) is greater than the partition size (0x%lx) - 12",
+                 stored_len, assets->partition_->size);
+        return false;
+    }
+
+    constexpr uint32_t kMmuPageSize = 64 * 1024;
+    uint32_t map_size = 12 + stored_len;
+    map_size = (map_size + kMmuPageSize - 1) & ~(kMmuPageSize - 1);
+    if (map_size > assets->partition_->size) {
+        map_size = assets->partition_->size;
+    }
+
+    int free_pages = spi_flash_mmap_get_free_pages(SPI_FLASH_MMAP_DATA);
+    uint32_t storage_size = free_pages * kMmuPageSize;
+    ESP_LOGI(TAG, "The storage free size is %ld KB", storage_size / 1024);
+    ESP_LOGI(TAG, "The assets map size is %ld KB (partition %ld KB)", map_size / 1024,
+             assets->partition_->size / 1024);
+    if (storage_size < map_size) {
+        ESP_LOGE(TAG, "The free size %ld KB is less than assets map required %ld KB",
+                 storage_size / 1024, map_size / 1024);
+        return false;
+    }
+
+    err = esp_partition_mmap(assets->partition_, 0, map_size, ESP_PARTITION_MMAP_DATA,
+                             (const void**)&mmap_root_, &mmap_handle_);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to mmap assets partition: %s", esp_err_to_name(err));
         return false;
     }
 
     assets->partition_valid_ = true;
-
-    uint32_t stored_files = *(uint32_t*)(mmap_root_ + 0);
-    uint32_t stored_chksum = *(uint32_t*)(mmap_root_ + 4);
-    uint32_t stored_len = *(uint32_t*)(mmap_root_ + 8);
-
-    if (stored_len > assets->partition_->size - 12) {
-        ESP_LOGD(TAG, "The stored_len (0x%lx) is greater than the partition size (0x%lx) - 12",
-                 stored_len, assets->partition_->size);
-        return false;
-    }
 
     auto start_time = esp_timer_get_time();
     uint32_t calculated_checksum = CalculateChecksum(mmap_root_ + 12, stored_len);
@@ -189,6 +212,8 @@ bool Assets::LvglStrategy::InitializePartition(Assets* assets) {
     if (calculated_checksum != stored_chksum) {
         ESP_LOGE(TAG, "The calculated checksum (0x%lx) does not match the stored checksum (0x%lx)",
                  calculated_checksum, stored_chksum);
+        UnApplyPartition(assets);
+        assets->partition_valid_ = false;
         return false;
     }
 
@@ -415,6 +440,7 @@ bool Assets::LvglStrategy::Apply(Assets* assets, bool refresh_display_theme) {
 #endif  // HAVE_LVGL
 
 bool Assets::EmoteStrategy::InitializePartition(Assets* assets) {
+    assets->DisableTextFontGlyphPush();
     assets->partition_valid_ = false;
 
     if (!Assets::FindPartition(assets)) {
@@ -474,6 +500,7 @@ bool Assets::EmoteStrategy::GetAssetData(Assets* assets, const std::string& name
 }
 
 bool Assets::EmoteStrategy::Apply(Assets* assets, bool refresh_display_theme) {
+    assets->DisableTextFontGlyphPush();
     Assets::LoadSrmodelsFromIndex(assets);
 
     auto display = Board::GetInstance().GetDisplay();
@@ -492,13 +519,18 @@ bool Assets::Download(std::string url,
     auto network = Board::GetInstance().GetNetwork();
     auto http = network->CreateHttp(0);
 
-    if (!http->Open("GET", url)) {
-        ESP_LOGE(TAG, "Failed to open HTTP connection");
+    if (auto opened = http->Open("GET", url); !opened) {
+        ESP_LOGE(TAG, "Failed to open HTTP connection: %s", opened.error().ToString().c_str());
         return false;
     }
 
-    if (http->GetStatusCode() != 200) {
-        ESP_LOGE(TAG, "Failed to get assets, status code: %d", http->GetStatusCode());
+    auto status_code = http->GetStatusCode();
+    if (!status_code) {
+        ESP_LOGE(TAG, "Failed to read HTTP status: %s", status_code.error().ToString().c_str());
+        return false;
+    }
+    if (*status_code != 200) {
+        ESP_LOGE(TAG, "Failed to get assets, status code: %d", *status_code);
         return false;
     }
 
@@ -554,13 +586,14 @@ bool Assets::Download(std::string url,
     size_t header_collected = 0;
     bool success = false;
     while (true) {
-        int ret = http->Read(buffer.get(), SECTOR_SIZE);
-        if (ret < 0) {
-            ESP_LOGE(TAG, "Failed to read HTTP data: %s", esp_err_to_name(ret));
+        auto ret = http->Read(buffer.get(), SECTOR_SIZE);
+        if (!ret) {
+            ESP_LOGE(TAG, "Failed to read HTTP data: %s", ret.error().ToString().c_str());
             break;
         }
+        int n = *ret;
 
-        if (ret == 0) {
+        if (n == 0) {
             // End of data
             success = true;
             break;
@@ -571,15 +604,15 @@ bool Assets::Download(std::string url,
         // Collect header
         if (header_collected < HEADER_SIZE) {
             size_t need = HEADER_SIZE - header_collected;
-            size_t take = std::min(static_cast<size_t>(ret), need);
+            size_t take = std::min(static_cast<size_t>(n), need);
             memcpy(header_buf + header_collected, buffer.get(), take);
             header_collected += take;
             buf_pos += take;
         }
 
         // Write payload
-        if ((size_t)ret > buf_pos) {
-            size_t write_len = (size_t)ret - buf_pos;
+        if ((size_t)n > buf_pos) {
+            size_t write_len = (size_t)n - buf_pos;
             size_t write_end_offset = HEADER_SIZE + total_written + write_len;
             size_t needed_sectors = (write_end_offset + SECTOR_SIZE - 1) / SECTOR_SIZE;
             // Erase sectors
