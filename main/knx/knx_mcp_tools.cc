@@ -4,11 +4,12 @@
 #include "mcp_server.h"
 
 #include <cJSON.h>
-
+#include <esp_log.h>
 #include <algorithm>
-#include <stdexcept>
 
 namespace {
+
+constexpr char kTag[] = "KNX_MCP";
 
 void AddValue(cJSON* json, const KnxValue& value) {
     std::visit([json](const auto& item) {
@@ -41,10 +42,12 @@ cJSON* ObjectToJson(const KnxCommunicationObject& object, bool include_descripti
     return json;
 }
 
-void ThrowOnFailure(bool success, const std::string& error) {
+bool CheckSuccess(bool success, const std::string& error) {
     if (!success) {
-        throw std::runtime_error(error);
+        ESP_LOGE(kTag, "%s", error.c_str());
+        return false;
     }
+    return true;
 }
 
 }  // namespace
@@ -98,11 +101,13 @@ void RegisterKnxMcpTools(McpServer& server) {
     server.AddTool("self.knx.get_object",
         "Gets the latest cached value and metadata for one configured KNX object. Use this for status questions such as whether a light is on or the current temperature. If valid is false, report the value as unknown and optionally request a read.",
         PropertyList({Property("object_id", kPropertyTypeString)}),
-        [&manager](const PropertyList& properties) -> ReturnValue {
+        [&manager](const PropertyList& properties) -> ToolResult {
             KnxCommunicationObject object;
             if (!manager.GetCommunicationObject(
                     properties["object_id"].value<std::string>(), object)) {
-                throw std::runtime_error("Unknown KNX object ID");
+                constexpr char error[] = "Unknown KNX object ID";
+                ESP_LOGE(kTag, "%s", error);
+                return std::unexpected(error);
             }
             return ObjectToJson(object, true);
         });
@@ -110,10 +115,12 @@ void RegisterKnxMcpTools(McpServer& server) {
     server.AddTool("self.knx.read",
         "Requests an asynchronous KNX group read for a configured readable group address. Use this to refresh an unknown or stale status, then call self.knx.get_object for the cached response. This call does not wait for a bus response.",
         PropertyList({Property("group_address", kPropertyTypeString)}),
-        [&manager](const PropertyList& properties) -> ReturnValue {
+        [&manager](const PropertyList& properties) -> ToolResult {
             const std::string address = properties["group_address"].value<std::string>();
             std::string error;
-            ThrowOnFailure(manager.RequestRead(address, error), error);
+            if (!CheckSuccess(manager.RequestRead(address, error), error)) {
+                return std::unexpected(std::move(error));
+            }
             cJSON* json = cJSON_CreateObject();
             cJSON_AddBoolToObject(json, "requested", true);
             cJSON_AddStringToObject(json, "group_address", address.c_str());
@@ -127,11 +134,13 @@ void RegisterKnxMcpTools(McpServer& server) {
             Property("group_address", kPropertyTypeString),
             Property("value", kPropertyTypeString),
         }),
-        [&manager](const PropertyList& properties) -> ReturnValue {
+        [&manager](const PropertyList& properties) -> ToolResult {
             std::string error;
-            ThrowOnFailure(manager.WriteGroupAddress(
-                properties["group_address"].value<std::string>(),
-                properties["value"].value<std::string>(), error), error);
+            if (!CheckSuccess(manager.WriteGroupAddress(
+                    properties["group_address"].value<std::string>(),
+                    properties["value"].value<std::string>(), error), error)) {
+                return std::unexpected(std::move(error));
+            }
             return true;
         });
 
@@ -141,11 +150,13 @@ void RegisterKnxMcpTools(McpServer& server) {
             Property("object_id", kPropertyTypeString),
             Property("value", kPropertyTypeString),
         }),
-        [&manager](const PropertyList& properties) -> ReturnValue {
+        [&manager](const PropertyList& properties) -> ToolResult {
             std::string error;
-            ThrowOnFailure(manager.WriteObject(
-                properties["object_id"].value<std::string>(),
-                properties["value"].value<std::string>(), error), error);
+            if (!CheckSuccess(manager.WriteObject(
+                    properties["object_id"].value<std::string>(),
+                    properties["value"].value<std::string>(), error), error)) {
+                return std::unexpected(std::move(error));
+            }
             return true;
         });
 
@@ -156,11 +167,13 @@ void RegisterKnxUserOnlyMcpTools(McpServer& server) {
     server.AddUserOnlyTool("self.knx.import_configuration",
         "Imports the complete KNX communication-object registry as JSON. The full payload is validated before it atomically replaces assets/interfaces/knxConfig.json and the active registry, then restarts KNX routing. This commissioning tool is visible only to the device owner, not the AI model.",
         PropertyList({Property("configuration", kPropertyTypeString)}),
-        [&manager](const PropertyList& properties) -> ReturnValue {
+        [&manager](const PropertyList& properties) -> ToolResult {
             size_t object_count = 0;
             std::string error;
-            ThrowOnFailure(manager.ImportConfiguration(
-                properties["configuration"].value<std::string>(), object_count, error), error);
+            if (!CheckSuccess(manager.ImportConfiguration(
+                    properties["configuration"].value<std::string>(), object_count, error), error)) {
+                return std::unexpected(std::move(error));
+            }
             cJSON* json = cJSON_CreateObject();
             cJSON_AddBoolToObject(json, "imported", true);
             cJSON_AddBoolToObject(json, "persisted", true);
