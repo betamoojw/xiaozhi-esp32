@@ -25,16 +25,20 @@ addresses (`area.line.member`) are accepted. Group ranges are 0..31, 0..7, and
 
 ## Object Registry
 
-Objects are stored as a JSON array in `assets/interfaces/knxConfig.json`, with
-a maximum serialized size of 3999 bytes. The `assets/interfaces` directory
-must be available and the file must exist before `KnxManager::Initialize()`
-runs.
+The factory/default registry is `main/assets/interfaces/knxConfig.json`. The
+build packages it into the read-only Assets image under the runtime name
+`interfaces/knxConfig.json`; it is not a writable filesystem file.
 
-Provision the file through FTP or through the owner-only MCP tool
-`self.knx.import_configuration`. The tool validates the complete candidate
-registry, atomically replaces `config.json`, updates the in-memory registry,
-and restarts KNX routing to bind callbacks to the new group addresses. No
-firmware rebuild or device reboot is required.
+Runtime configuration is stored in NVS under namespace `knx`, key `config`,
+with a maximum serialized size of 3999 bytes. At boot, a persisted runtime
+configuration takes priority over the factory asset. If neither is available,
+the firmware uses its emergency built-in registry.
+
+Provision runtime configuration through the owner-only MCP tool
+`self.knx.import_configuration`. The tool validates the complete candidate,
+persists canonical JSON to NVS, updates the in-memory registry only after the
+commit succeeds, and restarts KNX routing to bind callbacks to the new group
+addresses. No device reboot is required to apply a successful import.
 
 Each entry requires:
 
@@ -79,14 +83,13 @@ Do not grant write access merely to make an AI command succeed.
   or create a site-specific JSON array using the schema above.
 2. Open an authenticated MCP client that can list tools with the `user`
   audience.
-3. Upload it to `assets/interfaces/knxConfig.json` and reboot, or call
-  `self.knx.import_configuration` with the complete JSON array encoded as the
-  string property `configuration`.
+3. Call `self.knx.import_configuration` with the complete JSON array encoded
+  as the string property `configuration`.
 4. Confirm the response contains `imported: true`, `persisted: true`, and the
   expected `object_count`.
 5. Call `self.knx.list_objects` and `self.knx.get_status` to verify the active
   registry and routing state.
-6. Reboot the device and list the objects again to verify file persistence.
+6. Reboot the device and list the objects again to verify NVS persistence.
 
 Example MCP arguments using the test switch command:
 
@@ -119,13 +122,13 @@ them as current. Cache values are not persisted across reboot.
 - `KNX start failed`: inspect bind, multicast membership, IP, and port use.
 - `Invalid KNX communication object configuration`: validate every required
   field, address, DPT, boolean, length, and duplicate.
-- `KNX configuration directory is unavailable`: ensure `assets/interfaces`
-  is available before application initialization.
-- `Could not open KNX configuration file`: ensure
-  `assets/interfaces/knxConfig.json` exists and is readable.
-- `Could not write/replace KNX configuration file`: inspect filesystem
-  permissions and free capacity. The active registry is unchanged when
-  persistence fails.
+- `KNX factory configuration asset is unavailable`: ensure default assets were
+  generated and flashed with `interfaces/knxConfig.json` included.
+- `Could not load KNX configuration from NVS`: inspect NVS initialization and
+  partition health. Invalid persisted JSON is logged and is not silently
+  replaced by the factory registry.
+- `Could not persist KNX configuration to NVS`: inspect NVS capacity and
+  partition health. The active registry is unchanged when persistence fails.
 - Values stay unknown: verify group responses/feedback are routed and use the
   configured address and DPT.
 - Reads do not complete synchronously: this is intentional; request a read and

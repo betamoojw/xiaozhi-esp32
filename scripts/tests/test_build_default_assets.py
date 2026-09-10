@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import re
+import struct
 import tempfile
 import unittest
 from pathlib import Path
@@ -77,6 +78,34 @@ class BuildDefaultAssetsTest(unittest.TestCase):
             self.assertTrue(ok)
             self.assertTrue(output.exists())
             self.assertLessEqual(output.stat().st_size, 64 * 1024)
+
+    def test_named_extra_file_keeps_runtime_asset_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "knxConfig.json"
+            source.write_text("[]", encoding="utf-8")
+            output = root / "assets.bin"
+
+            ok = BUILD.build_assets_integrated(
+                None,
+                None,
+                None,
+                None,
+                None,
+                str(output),
+                named_extra_files=[f"{source}=interfaces/knxConfig.json"],
+            )
+
+            self.assertTrue(ok)
+            image = output.read_bytes()
+            file_count = struct.unpack_from("<I", image)[0]
+            names = {
+                image[12 + index * 44:12 + index * 44 + 32]
+                .split(b"\0", 1)[0]
+                .decode("utf-8")
+                for index in range(file_count)
+            }
+            self.assertIn("interfaces/knxConfig.json", names)
 
     def test_wakenet10_copy_keeps_s3_p1_slice(self):
         with tempfile.TemporaryDirectory() as directory:

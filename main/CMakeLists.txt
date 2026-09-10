@@ -1323,6 +1323,14 @@ function(build_default_assets_bin)
         list(APPEND BUILD_ARGS "--extra_files" "${DEFAULT_ASSETS_EXTRA_FILES}")
     endif()
 
+    if(CONFIG_XIAOZHI_KNX_IP)
+        set(KNX_FACTORY_CONFIGURATION
+            "${CMAKE_CURRENT_SOURCE_DIR}/assets/interfaces/knxConfig.json")
+        list(APPEND BUILD_ARGS "--named_extra_file"
+            "${KNX_FACTORY_CONFIGURATION}=interfaces/knxConfig.json")
+        list(APPEND DEFAULT_ASSETS_DEPENDENCIES "${KNX_FACTORY_CONFIGURATION}")
+    endif()
+
     list(APPEND BUILD_ARGS "--esp_sr_model_path" "${ESP_SR_MODEL_PATH}")
     list(APPEND BUILD_ARGS "--noto_fonts_path" "${NOTO_FONTS_PATH}")
 

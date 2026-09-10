@@ -24,6 +24,7 @@ add_executable(knx_config_test
     ../../../managed_components/espressif__cjson/cJSON/cJSON.c
 )
 target_compile_features(knx_config_test PRIVATE cxx_std_17)
+target_compile_definitions(knx_config_test PRIVATE XIAOZHI_KNX_CONFIG_PARSER_ONLY)
 target_include_directories(knx_config_test PRIVATE
     ..
     ${ESP_KNX_IP_ROOT}/components/esp_knx_ip/include

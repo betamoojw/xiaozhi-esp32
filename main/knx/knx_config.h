@@ -7,13 +7,14 @@
 #include <vector>
 
 constexpr size_t kKnxMaximumConfigurationLength = 3999;
-constexpr char kKnxConfigurationDirectory[] = "assets/interfaces";
-constexpr char kKnxConfigurationPath[] = "assets/interfaces/knxConfig.json";
+constexpr char kKnxFactoryConfigurationAsset[] = "interfaces/knxConfig.json";
+constexpr char kKnxSettingsNamespace[] = "knx";
+constexpr char kKnxSettingsKey[] = "config";
 
-bool KnxReadConfigurationFile(const char* path, std::string& json_text,
-                              std::string& error);
-bool KnxWriteConfigurationFile(const char* path, const std::string& json_text,
-                               std::string& error);
+bool KnxLoadFactoryConfiguration(std::string& json_text, std::string& error);
+bool KnxLoadPersistedConfiguration(std::string& json_text, bool& found,
+                                   std::string& error);
+bool KnxPersistConfiguration(const std::string& json_text, std::string& error);
 
 bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
                            size_t maximum_group_addresses,

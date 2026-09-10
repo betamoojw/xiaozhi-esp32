@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <set>
-#include <sys/stat.h>
 
 namespace {
 
@@ -76,24 +75,26 @@ bool KnxManager::Initialize() {
 }
 
 bool KnxManager::LoadConfiguration() {
-    struct stat directory_info = {};
     std::string json_text;
-    const bool configuration_directory_available =
-        stat(kKnxConfigurationDirectory, &directory_info) == 0 &&
-        S_ISDIR(directory_info.st_mode);
-    
-    if (!configuration_directory_available) {
-        ESP_LOGW(kTag, "KNX configuration directory is unavailable at %s; using default KNX configuration",
-                 kKnxConfigurationDirectory);
-        json_text = kValidConfiguration;
+    bool persisted_configuration_found = false;
+    if (!KnxLoadPersistedConfiguration(json_text, persisted_configuration_found,
+                                       last_error_)) {
+        ESP_LOGE(kTag, "%s", last_error_.c_str());
+        return false;
+    }
+
+    bool factory_configuration_selected = false;
+    if (persisted_configuration_found) {
+        ESP_LOGI(kTag, "Loading KNX configuration from NVS");
     } else {
-        if (!KnxReadConfigurationFile(kKnxConfigurationPath, json_text, last_error_)) {
-            ESP_LOGE(kTag, "%s", last_error_.c_str());
-            return false;
-        }
-        if (json_text.empty()) {
-            ESP_LOGW(kTag, "KNX configuration file is empty; using default configuration");
+        factory_configuration_selected = true;
+        ESP_LOGI(kTag, "Loading factory KNX configuration from assets");
+        if (!KnxLoadFactoryConfiguration(json_text, last_error_)) {
+            ESP_LOGW(kTag,
+                     "Factory KNX configuration asset unavailable; using emergency built-in configuration: %s",
+                     last_error_.c_str());
             json_text = kValidConfiguration;
+            factory_configuration_selected = false;
         }
     }
     std::vector<KnxCommunicationObject> objects;
@@ -102,6 +103,19 @@ bool KnxManager::LoadConfiguration() {
     if (!KnxParseConfiguration(json_text, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
                                CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects, canonical_json,
                                last_error_)) {
+        if (persisted_configuration_found || !factory_configuration_selected) {
+            ESP_LOGE(kTag, "%s", last_error_.c_str());
+            return false;
+        }
+        ESP_LOGE(kTag,
+                 "Factory KNX configuration is invalid; using emergency built-in configuration: %s",
+                 last_error_.c_str());
+        if (KnxParseConfiguration(kValidConfiguration, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
+                                  CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects,
+                                  canonical_json, last_error_)) {
+            objects_ = std::move(objects);
+            return true;
+        }
         ESP_LOGE(kTag, "%s", last_error_.c_str());
         return false;
     }
@@ -141,9 +155,11 @@ bool KnxManager::ImportConfiguration(const std::string& json_text,
         return false;
     }
 
-    if (!KnxWriteConfigurationFile(kKnxConfigurationPath, canonical_json, error)) {
+    if (!KnxPersistConfiguration(canonical_json, error)) {
+        ESP_LOGE(kTag, "%s", error.c_str());
         return false;
     }
+    ESP_LOGI(kTag, "Persisted KNX configuration to NVS");
 
     bool network_available = false;
     {

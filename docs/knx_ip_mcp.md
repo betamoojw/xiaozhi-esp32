@@ -92,10 +92,9 @@ registry.
 
 This owner-only commissioning tool is excluded from the AI tool audience. Its
 required `configuration` property is the complete object registry encoded as a
-JSON string. Validation and atomic replacement of
-`assets/interfaces/knxConfig.json` finish before the active registry is replaced. A
-successful import takes effect immediately by restarting the KNX routing
-transport; a failed import leaves the previous runtime and persisted
+JSON string. Validation and the NVS commit finish before the active registry is
+replaced. A successful import takes effect immediately by restarting the KNX
+routing transport; a failed import leaves the previous runtime and persisted
 configuration unchanged.
 
 Use [the configuration guide](knx_ip_configuration.md) for the schema, import

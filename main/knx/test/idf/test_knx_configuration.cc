@@ -115,7 +115,17 @@ TEST_CASE("KNX configuration enforces object limits", "[knx][configuration]") {
     TEST_ASSERT_FALSE(Parse(kValidConfiguration, 1, objects, error));
 }
 
-TEST_CASE("KNX configuration uses the asset interface registry path", "[knx][configuration]") {
-  TEST_ASSERT_EQUAL_STRING("assets/interfaces/knxConfig.json",
-               kKnxConfigurationPath);
+TEST_CASE("KNX configuration uses the packed factory asset name", "[knx][configuration]") {
+  TEST_ASSERT_EQUAL_STRING("interfaces/knxConfig.json",
+               kKnxFactoryConfigurationAsset);
+}
+
+TEST_CASE("KNX configuration accepts an empty registry", "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+    std::string error;
+    TEST_ASSERT_TRUE(KnxParseConfiguration("[]", 8, 8, objects,
+                                           canonical_json, error));
+    TEST_ASSERT_TRUE(objects.empty());
+    TEST_ASSERT_EQUAL_STRING("[]", canonical_json.c_str());
 }

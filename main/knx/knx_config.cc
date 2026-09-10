@@ -1,11 +1,14 @@
 #include "knx_config.h"
 
+#ifndef XIAOZHI_KNX_CONFIG_PARSER_ONLY
+#include "assets.h"
+#include "settings.h"
+
+#include <esp_err.h>
+#endif
 #include <cJSON.h>
 
 #include <algorithm>
-#include <array>
-#include <cerrno>
-#include <cstdio>
 #include <cstring>
 #include <iterator>
 #include <set>
@@ -73,76 +76,60 @@ bool ValidateObject(const KnxCommunicationObject& object,
 
 }  // namespace
 
-bool KnxReadConfigurationFile(const char* path, std::string& json_text,
-                              std::string& error) {
+#ifndef XIAOZHI_KNX_CONFIG_PARSER_ONLY
+bool KnxLoadFactoryConfiguration(std::string& json_text, std::string& error) {
     json_text.clear();
     error.clear();
-    FILE* file = std::fopen(path, "rb");
-    if (file == nullptr) {
-        error = std::string("Could not open KNX configuration file ") + path +
-                ": " + std::strerror(errno);
+    void* data = nullptr;
+    size_t size = 0;
+    if (!Assets::GetInstance().GetAssetData(kKnxFactoryConfigurationAsset, data, size)) {
+        error = std::string("KNX factory configuration asset is unavailable: ") +
+                kKnxFactoryConfigurationAsset;
         return false;
     }
-
-    std::array<char, 512> buffer;
-    size_t bytes_read = 0;
-    while ((bytes_read = std::fread(buffer.data(), 1, buffer.size(), file)) > 0) {
-        if (json_text.size() + bytes_read > kKnxMaximumConfigurationLength) {
-            std::fclose(file);
-            json_text.clear();
-            error = "KNX configuration file exceeds the size limit";
-            return false;
-        }
-        json_text.append(buffer.data(), bytes_read);
-    }
-    if (std::ferror(file)) {
-        error = std::string("Could not read KNX configuration file ") + path +
-                ": " + std::strerror(errno);
-        std::fclose(file);
-        json_text.clear();
+    if (data == nullptr || size == 0 || size > kKnxMaximumConfigurationLength) {
+        error = "KNX factory configuration asset is empty or exceeds the size limit";
         return false;
     }
-    std::fclose(file);
+    json_text.assign(static_cast<const char*>(data), size);
     return true;
 }
 
-bool KnxWriteConfigurationFile(const char* path, const std::string& json_text,
-                               std::string& error) {
-    const std::string temporary_path = std::string(path) + ".tmp";
-    FILE* file = std::fopen(temporary_path.c_str(), "wb");
-    if (file == nullptr) {
-        error = std::string("Could not open temporary KNX configuration file: ") +
-                std::strerror(errno);
+bool KnxLoadPersistedConfiguration(std::string& json_text, bool& found,
+                                   std::string& error) {
+    json_text.clear();
+    found = false;
+    error.clear();
+    Settings settings(kKnxSettingsNamespace);
+    const esp_err_t result = settings.GetString(kKnxSettingsKey, json_text);
+    if (result == ESP_ERR_NVS_NOT_FOUND) {
+        return true;
+    }
+    if (result != ESP_OK) {
+        error = std::string("Could not load KNX configuration from NVS: ") +
+                esp_err_to_name(result);
         return false;
     }
+    found = true;
+    return true;
+}
 
-    const size_t bytes_written = std::fwrite(json_text.data(), 1, json_text.size(), file);
-    bool write_succeeded = bytes_written == json_text.size();
-    int write_error = write_succeeded ? 0 : errno;
-    if (write_succeeded && std::fflush(file) != 0) {
-        write_succeeded = false;
-        write_error = errno;
-    }
-    if (std::fclose(file) != 0) {
-        write_succeeded = false;
-        if (write_error == 0) {
-            write_error = errno;
-        }
-    }
-    if (!write_succeeded) {
-        error = std::string("Could not write KNX configuration file: ") +
-                std::strerror(write_error == 0 ? EIO : write_error);
-        std::remove(temporary_path.c_str());
+bool KnxPersistConfiguration(const std::string& json_text, std::string& error) {
+    error.clear();
+    if (json_text.empty() || json_text.size() > kKnxMaximumConfigurationLength) {
+        error = "KNX configuration is empty or exceeds the size limit";
         return false;
     }
-    if (std::rename(temporary_path.c_str(), path) != 0) {
-        error = std::string("Could not replace KNX configuration file: ") +
-                std::strerror(errno);
-        std::remove(temporary_path.c_str());
+    Settings settings(kKnxSettingsNamespace, true);
+    const esp_err_t result = settings.SetStringAndCommit(kKnxSettingsKey, json_text);
+    if (result != ESP_OK) {
+        error = std::string("Could not persist KNX configuration to NVS: ") +
+                esp_err_to_name(result);
         return false;
     }
     return true;
 }
+#endif
 
 bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
                            size_t maximum_group_addresses,

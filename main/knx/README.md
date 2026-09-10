@@ -19,12 +19,12 @@ and updates the mutex-protected cache. Socket start, stop, and restart run on
 the `knx_lifecycle` task. MCP reads return cached state and group reads are
 asynchronous, so XiaoZhi's main task never waits for a KNX response.
 
-The communication-object registry is loaded from
-`assets/interfaces/knxConfig.json` during manager initialization. Commissioning can
-upload that file through FTP or use the owner-only
-`self.knx.import_configuration` MCP tool. MCP imports validate the complete
-registry and atomically replace the same file before changing the active
-registry. Successful imports are applied immediately and survive reboot.
+The communication-object registry is loaded from NVS when a runtime
+configuration exists, otherwise from the read-only factory Assets image.
+Commissioning uses the owner-only `self.knx.import_configuration` MCP tool.
+MCP imports validate and commit the complete registry to NVS before changing
+the active registry. Successful imports are applied immediately and survive
+reboot.
 
 See [the integration guide](../../docs/knx_ip_integration.md),
 [configuration reference](../../docs/knx_ip_configuration.md), and

@@ -329,6 +329,25 @@ def process_extra_files(extra_files_dir, assets_dir):
     
     return extra_files_list
 
+def process_named_extra_files(named_extra_files, assets_dir):
+    """Copy source=asset/name entries while preserving their runtime names."""
+    processed = []
+    for specification in named_extra_files or []:
+        source, separator, asset_name = specification.partition('=')
+        normalized_name = asset_name.replace('\\', '/')
+        if (not separator or not source or not normalized_name or
+                normalized_name.startswith('/') or
+                '..' in normalized_name.split('/')):
+            raise ValueError(f"Invalid named extra file: {specification}")
+        if len(normalized_name.encode('utf-8')) > 32:
+            raise ValueError(f"Asset name exceeds 32 bytes: {normalized_name}")
+        destination = os.path.join(assets_dir, *normalized_name.split('/'))
+        ensure_dir(os.path.dirname(destination))
+        if not copy_file(source, destination):
+            raise ValueError(f"Could not copy named extra file: {source}")
+        processed.append(normalized_name)
+    return processed
+
 
 def generate_index_json(assets_dir, srmodels, text_font, emoji_collection, extra_files=None,
                         multinet_model_info=None, font_bundle_id=None):
@@ -430,16 +449,20 @@ def pack_assets_simple(target_path, include_path, out_file, assets_path, max_nam
     os.makedirs(os.path.dirname(out_file), exist_ok=True)
     os.makedirs(include_path, exist_ok=True)
 
-    file_list = sorted(os.listdir(target_path), key=sort_key)
-    for filename in file_list:
+    file_list = []
+    for root, _, filenames in os.walk(target_path):
+        for filename in filenames:
+            relative_path = os.path.relpath(os.path.join(root, filename), target_path)
+            file_list.append(relative_path.replace(os.sep, '/'))
+    for filename in sorted(file_list, key=sort_key):
         if filename in skip_files:
             continue
 
-        file_path = os.path.join(target_path, filename)
+        file_path = os.path.join(target_path, *filename.split('/'))
         if not os.path.isfile(file_path):
             continue
             
-        file_name = os.path.basename(file_path)
+        file_name = filename
         file_size = os.path.getsize(file_path)
 
         file_info_list.append((file_name, len(merged_data), file_size, 0, 0))
@@ -494,7 +517,7 @@ def pack_assets_simple(target_path, include_path, out_file, assets_path, max_nam
         output_header.write(f'enum MMAP_{asset_name.upper()}_LISTS {{\n')
 
         for i, (file_name, _, _, _, _) in enumerate(file_info_list):
-            enum_name = file_name.replace('.', '_')
+            enum_name = re.sub(r'[^A-Za-z0-9_]', '_', file_name)
             output_header.write(f'    MMAP_{asset_name.upper()}_{enum_name.upper()} = {i},        /*!< {file_name} */\n')
 
         output_header.write('};\n')
@@ -810,7 +833,7 @@ def get_emoji_collection_path(default_emoji_collection, noto_fonts_path, project
 def build_assets_integrated(wakenet_model_paths, multinet_model_paths, text_font_path,
                             emoji_collection_path, extra_files_path, output_path,
                             multinet_model_info=None, font_bundle_id=None, max_size=None,
-                            idf_target=None):
+                            idf_target=None, named_extra_files=None):
     """
     Build assets using integrated functions (no external dependencies)
     """
@@ -835,6 +858,9 @@ def build_assets_integrated(wakenet_model_paths, multinet_model_paths, text_font
         text_font = process_text_font(text_font_path, assets_dir) if text_font_path else None
         emoji_collection = process_emoji_collection(emoji_collection_path, assets_dir) if emoji_collection_path else None
         extra_files = process_extra_files(extra_files_path, assets_dir) if extra_files_path else None
+        named_files = process_named_extra_files(named_extra_files, assets_dir)
+        if named_files:
+            extra_files = (extra_files or []) + named_files
         
         # Generate index.json
         generate_index_json(assets_dir, srmodels, text_font, emoji_collection, extra_files,
@@ -891,6 +917,8 @@ def main():
     parser.add_argument('--esp_sr_model_path', help='Path to ESP-SR model directory')
     parser.add_argument('--noto_fonts_path', help='Path to noto-fonts component directory')
     parser.add_argument('--extra_files', help='Path to extra files directory to be included in assets')
+    parser.add_argument('--named_extra_file', action='append', default=[],
+                        help='Source and runtime asset name in source=asset/name form')
     parser.add_argument('--max_size', type=lambda v: int(v, 0), default=None,
                         help='Fail if assets.bin exceeds this many bytes (decimal or 0x hex)')
     
@@ -998,7 +1026,7 @@ def main():
         print(f"  wake word threshold: {custom_wake_word_config['threshold']}")
     
     # Check if we have anything to build
-    if not wakenet_model_paths and not multinet_model_paths and not text_font_path and not emoji_collection_path and not extra_files_path and not multinet_model_info:
+    if not wakenet_model_paths and not multinet_model_paths and not text_font_path and not emoji_collection_path and not extra_files_path and not args.named_extra_file and not multinet_model_info:
         print("Warning: No assets to build (no SR models, text font, emoji collection, extra files, or custom wake word)")
         # Create an empty assets.bin file
         os.makedirs(os.path.dirname(args.output), exist_ok=True)
@@ -1011,7 +1039,7 @@ def main():
     success = build_assets_integrated(
         wakenet_model_paths, multinet_model_paths, text_font_path, emoji_collection_path,
         extra_files_path, args.output, multinet_model_info, font_bundle_id, args.max_size,
-        idf_target=idf_target)
+        idf_target=idf_target, named_extra_files=args.named_extra_file)
     
     if not success:
         sys.exit(1)

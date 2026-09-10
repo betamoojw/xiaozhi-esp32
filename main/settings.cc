@@ -6,7 +6,8 @@
 #define TAG "Settings"
 
 Settings::Settings(const std::string& ns, bool read_write) : ns_(ns), read_write_(read_write) {
-    nvs_open(ns.c_str(), read_write_ ? NVS_READWRITE : NVS_READONLY, &nvs_handle_);
+    open_error_ = nvs_open(ns.c_str(), read_write_ ? NVS_READWRITE : NVS_READONLY,
+                           &nvs_handle_);
 }
 
 Settings::~Settings() {
@@ -19,22 +20,34 @@ Settings::~Settings() {
 }
 
 std::string Settings::GetString(const std::string& key, const std::string& default_value) {
-    if (nvs_handle_ == 0) {
+    std::string value;
+    if (GetString(key, value) != ESP_OK) {
         return default_value;
+    }
+    return value;
+}
+
+esp_err_t Settings::GetString(const std::string& key, std::string& value) {
+    value.clear();
+    if (open_error_ != ESP_OK) {
+        return open_error_;
     }
 
     size_t length = 0;
-    if (nvs_get_str(nvs_handle_, key.c_str(), nullptr, &length) != ESP_OK) {
-        return default_value;
+    esp_err_t result = nvs_get_str(nvs_handle_, key.c_str(), nullptr, &length);
+    if (result != ESP_OK) {
+        return result;
     }
-
-    std::string value;
     value.resize(length);
-    ESP_ERROR_CHECK(nvs_get_str(nvs_handle_, key.c_str(), value.data(), &length));
+    result = nvs_get_str(nvs_handle_, key.c_str(), value.data(), &length);
+    if (result != ESP_OK) {
+        value.clear();
+        return result;
+    }
     while (!value.empty() && value.back() == '\0') {
         value.pop_back();
     }
-    return value;
+    return ESP_OK;
 }
 
 void Settings::SetString(const std::string& key, const std::string& value) {
@@ -47,7 +60,10 @@ void Settings::SetString(const std::string& key, const std::string& value) {
 }
 
 esp_err_t Settings::SetStringAndCommit(const std::string& key, const std::string& value) {
-    if (!read_write_ || nvs_handle_ == 0) {
+    if (open_error_ != ESP_OK) {
+        return open_error_;
+    }
+    if (!read_write_) {
         ESP_LOGW(TAG, "Namespace %s is not open for writing", ns_.c_str());
         return ESP_ERR_INVALID_STATE;
     }
