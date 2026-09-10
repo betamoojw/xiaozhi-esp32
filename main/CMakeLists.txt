@@ -45,6 +45,21 @@ set(SOURCES "audio/audio_codec.cc"
 
 set(INCLUDE_DIRS "." "display" "display/lvgl_display" "display/lvgl_display/jpg" "audio" "audio/demuxer" "protocols")
 
+if(CONFIG_XIAOZHI_KNX_IP)
+    list(APPEND SOURCES
+        "knx/knx_config.cc"
+        "knx/knx_object.cc"
+        "knx/knx_manager.cc"
+        "knx/knx_mcp_tools.cc"
+    )
+    list(APPEND INCLUDE_DIRS "knx")
+endif()
+
+if(CONFIG_XIAOZHI_FTP_SERVER)
+    list(APPEND SOURCES "ftp_server/ftp_server.cc")
+    list(APPEND INCLUDE_DIRS "ftp_server")
+endif()
+
 # Add board common files
 list(APPEND SOURCES
     "boards/common/board.cc"
@@ -1074,6 +1089,9 @@ if(CONFIG_BOARD_TYPE_ESP32_P4_FUNCTION_EV_BOARD)
         esp_driver_sdmmc
         sdmmc
     )
+endif()
+if(CONFIG_XIAOZHI_KNX_IP)
+    list(APPEND MAIN_PRIV_REQUIRES_EXTRA esp_knx_ip)
 endif()
 idf_component_register(SRCS ${SOURCES}
                     EMBED_FILES ${LANG_SOUNDS} ${COMMON_SOUNDS}

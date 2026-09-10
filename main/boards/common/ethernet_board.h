@@ -31,6 +31,7 @@ public:
     virtual std::string GetBoardType() override;
     virtual void StartNetwork() override;
     virtual NetworkInterface* GetNetwork() override;
+    virtual esp_netif_obj* GetEspNetif() override { return eth_netif_; }
     virtual void SetNetworkEventCallback(NetworkEventCallback callback) override;
     virtual const char* GetNetworkStateIcon() override;
     virtual void SetPowerSaveLevel(PowerSaveLevel level) override;

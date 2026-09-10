@@ -1013,6 +1013,77 @@ config RECEIVE_CUSTOM_MESSAGE
     help
         Enable custom message reception, allow the device to receive custom messages from the server (preferably through the MQTT protocol)
 
+menu "KNX/IP Configuration"
+
+    config XIAOZHI_KNX_IP
+        bool "Enable KNXnet/IP routing"
+        default y
+        help
+            Enable KNX communication-object access over an existing Wi-Fi or
+            Ethernet connection. Only KNXnet/IP routing is supported.
+
+    config XIAOZHI_KNX_IP_PHYSICAL_ADDRESS
+        string "KNX individual address"
+        default "15.15.199"
+        depends on XIAOZHI_KNX_IP
+
+    config XIAOZHI_KNX_IP_MULTICAST_ADDRESS
+        string "KNXnet/IP routing multicast address"
+        default "224.0.23.12"
+        depends on XIAOZHI_KNX_IP
+
+    config XIAOZHI_KNX_IP_PORT
+        int "KNXnet/IP UDP port"
+        range 1 65535
+        default 3671
+        depends on XIAOZHI_KNX_IP
+
+    config XIAOZHI_KNX_IP_RECONNECT_INTERVAL_MS
+        int "Retry interval (milliseconds)"
+        range 1000 300000
+        default 10000
+        depends on XIAOZHI_KNX_IP
+
+    config XIAOZHI_KNX_IP_MAX_OBJECTS
+        int "Maximum configured communication objects"
+        range 1 128
+        default 64
+        depends on XIAOZHI_KNX_IP
+
+    config XIAOZHI_KNX_IP_DEBUG
+        bool "Enable verbose KNX manager logging"
+        default y
+        depends on XIAOZHI_KNX_IP
+
+endmenu
+
+menu "FTP Server Configuration"
+
+    config XIAOZHI_FTP_SERVER
+        bool "Enable FTP server"
+        default y
+        help
+            Expose the filesystem mounted by the selected board over FTP.
+            The server starts when networking is connected and stops when it
+            disconnects. The upstream espp/ftp component does not enforce
+            authentication, so enable this only on a trusted network.
+
+    config XIAOZHI_FTP_SERVER_PORT
+        int "FTP control port"
+        range 1 65535
+        default 21
+        depends on XIAOZHI_FTP_SERVER
+
+    config XIAOZHI_FTP_SERVER_ROOT
+        string "FTP filesystem root"
+        default "assets"
+        depends on XIAOZHI_FTP_SERVER
+        help
+            Path of the existing assets VFS filesystem. The FTP server never
+            mounts, formats, or unmounts this filesystem.
+
+endmenu
+
 menu "Camera Configuration"
     depends on !IDF_TARGET_ESP32
 
