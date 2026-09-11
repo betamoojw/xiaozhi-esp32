@@ -5,7 +5,7 @@ XiaoZhi uses two independent flash storage mechanisms:
 | Partition | Filesystem | Purpose |
 | --- | --- | --- |
 | `assets` | Existing packaged Assets/SPIFFS image | Read-only firmware assets |
-| `lfs` | LittleFS | Writable runtime and user files mounted at `/littlefs` |
+| `littlefs` | LittleFS | Writable runtime and user files mounted at `/littlefs` |
 
 The `Assets` API and its `assets` partition are unchanged. LittleFS is mounted
 once during application initialization, before network services start. A mount
@@ -13,24 +13,24 @@ failure is logged and disables filesystem-dependent services without formatting
 or erasing the partition. Formatting is available only through the explicit
 `LittleFsStorage::Format()` maintenance API.
 
-For layouts containing `lfs`, CMake creates and flashes a separate formatted
+For layouts containing `littlefs`, CMake creates and flashes a separate formatted
 image from `littlefs/`. It seeds only the `interfaces` directory and never
-includes files from `main/assets`. Layouts without `lfs` skip image generation.
+includes files from `main/assets`. Layouts without `littlefs` skip image generation.
 
 The supported V2 flash layouts use these exact ranges:
 
 | Layout | Partition | Type | Subtype | Offset | Size |
 | --- | --- | --- | --- | --- | --- |
 | 16 MB | `assets` | data | spiffs | `0x800000` | `0x600000` |
-| 16 MB | `lfs` | data | littlefs | `0xE00000` | `0x200000` |
+| 16 MB | `littlefs` | data | littlefs | `0xE00000` | `0x200000` |
 | 16 MB C3/C6 | `assets` | data | spiffs | `0x800000` | `0x3E8000` |
-| 16 MB C3/C6 | `lfs` | data | littlefs | `0xC00000` | `0x200000` |
+| 16 MB C3/C6 | `littlefs` | data | littlefs | `0xC00000` | `0x200000` |
 | 32 MB | `assets` | data | spiffs | `0xA00000` | `0x1000000` |
-| 32 MB | `lfs` | data | littlefs | `0x1A00000` | `0x200000` |
+| 32 MB | `littlefs` | data | littlefs | `0x1A00000` | `0x200000` |
 
 The standard 16 MB Assets partition was reduced from 8 MB to 6 MB after
 checking the generated Assets image (1,779,244 bytes). OTA partition sizes and
-offsets remain unchanged. Smaller V2 and legacy V1 layouts do not gain an `lfs`
+offsets remain unchanged. Smaller V2 and legacy V1 layouts do not gain an `littlefs`
 partition; LittleFS reports unavailable on those layouts rather than consuming
 space required by OTA or existing assets.
 

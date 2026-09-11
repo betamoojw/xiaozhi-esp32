@@ -1,7 +1,7 @@
 # FTP Server
 
 The optional FTP server exposes the writable LittleFS filesystem mounted from
-partition `lfs` at `/littlefs`. It starts after XiaoZhi receives a network
+partition `littlefs` at `/littlefs`. It starts after XiaoZhi receives a network
 connected event and stops on network disconnect. FTP sessions run in tasks
 owned by the project-patched `espp/ftp` component, outside the main application
 and audio tasks.
@@ -23,7 +23,7 @@ mounted or exposed through FTP.
 
 ## FileZilla
 
-1. Use a flash layout containing the `lfs` partition and enable the FTP server.
+1. Use a flash layout containing the `littlefs` partition and enable the FTP server.
 2. Read the device IPv4 address from the `FTP_SERVER` startup log.
 3. In FileZilla, use plain FTP, the configured port, passive transfer mode, and
    any non-empty username and password.

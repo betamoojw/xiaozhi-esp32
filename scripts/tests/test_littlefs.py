@@ -51,7 +51,7 @@ class LittleFsPartitionTests(unittest.TestCase):
             with self.subTest(path=path):
                 partitions = read_partitions(path)
                 assets = next(item for item in partitions if item[0] == "assets")
-                littlefs = next(item for item in partitions if item[0] == "lfs")
+                littlefs = next(item for item in partitions if item[0] == "littlefs")
                 self.assertEqual(assets[1:3], ("data", "spiffs"))
                 self.assertEqual(littlefs[1:3], ("data", "littlefs"))
                 self.assertEqual(
@@ -72,7 +72,7 @@ class LittleFsIntegrationTests(unittest.TestCase):
         source = (ROOT / "main/storage/littlefs_storage.cc").read_text(
             encoding="utf-8"
         )
-        self.assertIn('kPartitionLabel[] = "lfs"', source)
+        self.assertIn('kPartitionLabel[] = "littlefs"', source)
         self.assertIn('kMountPoint[] = "/littlefs"', source)
         self.assertRegex(source, r"\.format_if_mount_failed\s*=\s*false")
         mount_position = source.index("esp_vfs_littlefs_register")
@@ -88,9 +88,9 @@ class LittleFsIntegrationTests(unittest.TestCase):
 
     def test_seed_image_is_separate_and_optional(self):
         cmake = (ROOT / "main/CMakeLists.txt").read_text(encoding="utf-8")
-        self.assertIn('"--partition-name lfs"', cmake)
+        self.assertIn('"--partition-name littlefs"', cmake)
         self.assertIn(
-            'littlefs_create_partition_image(lfs "${PROJECT_DIR}/littlefs" FLASH_IN_PROJECT)',
+            'littlefs_create_partition_image(littlefs "${PROJECT_DIR}/littlefs" FLASH_IN_PROJECT)',
             cmake,
         )
         self.assertNotIn("main/assets", cmake[cmake.index("littlefs_create_partition_image"):])

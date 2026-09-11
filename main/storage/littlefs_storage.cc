@@ -11,7 +11,7 @@
 
 namespace {
 constexpr char kTag[] = "LITTLEFS";
-constexpr char kPartitionLabel[] = "lfs";
+constexpr char kPartitionLabel[] = "littlefs";
 constexpr char kMountPoint[] = "/littlefs";
 constexpr char kInterfacesDirectory[] = "/littlefs/interfaces";
 }  // namespace

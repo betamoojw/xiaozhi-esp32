@@ -1124,11 +1124,11 @@ idf_component_register(SRCS ${SOURCES}
                         ${MAIN_PRIV_REQUIRES_EXTRA}
                     )
 
-partition_table_get_partition_info(littlefs_partition_size "--partition-name lfs" "size")
+partition_table_get_partition_info(littlefs_partition_size "--partition-name littlefs" "size")
 if(littlefs_partition_size)
-    littlefs_create_partition_image(lfs "${PROJECT_DIR}/littlefs" FLASH_IN_PROJECT)
+    littlefs_create_partition_image(littlefs "${PROJECT_DIR}/littlefs" FLASH_IN_PROJECT)
 else()
-    message(STATUS "Partition table has no lfs partition; LittleFS image is disabled")
+    message(STATUS "Partition table has no littlefs partition; LittleFS image is disabled")
 endif()
 
 # Keep project-owned C++ on GNU C++23. ESP-IDF 6 may default to a newer

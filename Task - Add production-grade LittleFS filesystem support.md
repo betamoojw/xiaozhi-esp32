@@ -18,7 +18,7 @@ The primary runtime filesystem configuration must be:
 
 ```text
 LittleFS partition label:
-lfs
+littlefs
 
 LittleFS VFS mount point:
 /littlefs
@@ -48,7 +48,7 @@ ESP32 Flash
 ├── assets
 │   └── existing XiaoZhi Assets / SPIFFS
 │
-└── lfs
+└── littlefs
     └── LittleFS
         └── mounted at /littlefs
 ```
@@ -59,12 +59,12 @@ The final architecture must be:
 Partition label     Filesystem       VFS / API
 ---------------------------------------------------------
 assets              existing SPIFFS  XiaoZhi Assets
-lfs                 LittleFS         /littlefs
+littlefs                 LittleFS         /littlefs
 ```
 
 The `assets` partition remains dedicated to packaged firmware assets.
 
-The `lfs` partition is the writable runtime filesystem.
+The `littlefs` partition is the writable runtime filesystem.
 
 ---
 
@@ -95,12 +95,12 @@ The existing Assets system must continue working unchanged.
 
 ---
 
-# 3. LITTLEFS PARTITION LABEL — MUST BE `lfs`
+# 3. LITTLEFS PARTITION LABEL — MUST BE `littlefs`
 
 The new partition MUST use exactly:
 
 ```text
-lfs
+littlefs
 ```
 
 as its partition label.
@@ -119,14 +119,14 @@ as the partition label.
 The distinction must remain:
 
 ```text
-partition label = lfs
+partition label = littlefs
 mount point     = /littlefs
 ```
 
 For example, the LittleFS registration must conceptually use:
 
 ```cpp
-.partition_label = "lfs"
+.partition_label = "littlefs"
 .base_path = "/littlefs"
 ```
 
@@ -135,7 +135,7 @@ Use the exact API structure required by the installed LittleFS component.
 Do not confuse:
 
 ```text
-lfs
+littlefs
 ```
 
 with:
@@ -153,7 +153,7 @@ They are intentionally different.
 Add a dedicated data partition:
 
 ```text
-lfs, data, littlefs, <offset>, <size>
+littlefs, data, littlefs, <offset>, <size>
 ```
 
 Use the correct LittleFS partition subtype supported by the selected LittleFS component.
@@ -166,7 +166,7 @@ The resulting partition table must contain both:
 
 ```text
 assets
-lfs
+littlefs
 ```
 
 with no overlap.
@@ -213,21 +213,21 @@ Therefore:
 4. Allocate the remaining safe space to:
 
 ```text
-lfs
+littlefs
 ```
 
 A candidate layout is:
 
 ```text
 assets = 6 MB
-lfs    = 2 MB
+littlefs    = 2 MB
 ```
 
 but ONLY use this if the actual Assets image is proven to fit inside 6 MB.
 
 Do not blindly shrink `assets`.
 
-Do not blindly use 2 MB for `lfs`.
+Do not blindly use 2 MB for `littlefs`.
 
 Do not shrink OTA partitions unless absolutely necessary.
 
@@ -280,7 +280,7 @@ as the VFS mount point.
 Therefore:
 
 ```text
-partition label = lfs
+partition label = littlefs
 mount point     = /littlefs
 ```
 
@@ -299,7 +299,7 @@ Do NOT mount LittleFS at:
 /
 /assets
 /storage
-/lfs
+/littlefs
 ```
 
 unless there is a compelling existing architectural requirement.
@@ -349,7 +349,7 @@ The exact interface may be adjusted to match the repository architecture.
 The implementation must always use:
 
 ```text
-partition_label = lfs
+partition_label = littlefs
 mount_point     = /littlefs
 ```
 
@@ -364,7 +364,7 @@ The configuration should conceptually be:
 ```cpp
 esp_vfs_littlefs_conf_t conf = {
     .base_path = "/littlefs",
-    .partition_label = "lfs",
+    .partition_label = "littlefs",
     .format_if_mount_failed = false,
     .read_only = false,
 };
@@ -390,7 +390,7 @@ If mounting fails:
 
 - log the error;
 - do not format;
-- do not erase the `lfs` partition;
+- do not erase the `littlefs` partition;
 - mark LittleFS unavailable;
 - allow the rest of the firmware to continue where possible.
 
@@ -423,7 +423,7 @@ Application startup
        │
        ▼
 Mount LittleFS
-partition = lfs
+partition = littlefs
 mount     = /littlefs
        │
        ▼
@@ -451,7 +451,7 @@ On successful mount, log:
 
 ```text
 LittleFS mounted
-partition=lfs
+partition=littlefs
 mount=/littlefs
 total=<bytes>
 used=<bytes>
@@ -462,7 +462,7 @@ On failure:
 
 ```text
 Failed to mount LittleFS
-partition=lfs
+partition=littlefs
 mount=/littlefs
 error=<error>
 ```
@@ -782,7 +782,7 @@ If a LittleFS image is needed, use the LittleFS component's supported CMake inte
 
 ```cmake
 littlefs_create_partition_image(
-    lfs
+    littlefs
     <source-directory>
     FLASH_IN_PROJECT
 )
@@ -791,7 +791,7 @@ littlefs_create_partition_image(
 The partition name supplied to the build system must be:
 
 ```text
-lfs
+littlefs
 ```
 
 Do not use:
@@ -839,7 +839,7 @@ phy_init
 ota_0
 ota_1
 assets
-lfs
+littlefs
 ```
 
 The exact offsets and sizes must be calculated from the actual repository layout.
@@ -847,13 +847,13 @@ The exact offsets and sizes must be calculated from the actual repository layout
 The final partition must be:
 
 ```text
-lfs, data, littlefs, <offset>, <size>
+littlefs, data, littlefs, <offset>, <size>
 ```
 
 The label MUST be:
 
 ```text
-lfs
+littlefs
 ```
 
 Verify:
@@ -863,7 +863,7 @@ no overlap
 correct alignment
 assets image fits
 OTA images fit
-lfs fits
+littlefs fits
 ```
 
 Use ESP-IDF tooling to validate the generated partition table.
@@ -910,7 +910,7 @@ CONFIG_XIAOZHI_FTP_SERVER_ROOT
 If configurable, the defaults must be:
 
 ```text
-CONFIG_XIAOZHI_LITTLEFS_PARTITION_LABEL = lfs
+CONFIG_XIAOZHI_LITTLEFS_PARTITION_LABEL = littlefs
 CONFIG_XIAOZHI_LITTLEFS_MOUNT_POINT      = /littlefs
 CONFIG_XIAOZHI_FTP_SERVER_ROOT           = /littlefs
 ```
@@ -926,7 +926,7 @@ Handle:
 ### Partition missing
 
 ```text
-LittleFS partition lfs not found
+LittleFS partition littlefs not found
 ```
 
 Do not crash.
@@ -964,7 +964,7 @@ bool Format();
 Formatting must explicitly target:
 
 ```text
-lfs
+littlefs
 ```
 
 and never:
@@ -1010,7 +1010,7 @@ The test must operate specifically on:
 and therefore the partition:
 
 ```text
-lfs
+littlefs
 ```
 
 ---
@@ -1028,7 +1028,7 @@ must exist.
 After reboot:
 
 ```text
-Mount partition lfs
+Mount partition littlefs
     ↓
 /littlefs/interfaces/knxConfig.json
 ```
@@ -1098,7 +1098,7 @@ assets
 and:
 
 ```text
-lfs
+littlefs
 ```
 
 are independently mounted/accessed.
@@ -1116,7 +1116,7 @@ ESP32 Flash
 │   └── existing XiaoZhi Assets
 │       └── interfaces/knxConfig.json
 │
-└── lfs partition
+└── littlefs partition
     └── LittleFS
         └── /littlefs
             ├── interfaces/
@@ -1127,7 +1127,7 @@ ESP32 Flash
 The critical identifiers are:
 
 ```text
-Partition label: lfs
+Partition label: littlefs
 Filesystem:      LittleFS
 Mount point:     /littlefs
 FTP root:        /littlefs
@@ -1201,7 +1201,7 @@ The generated partition table contains:
 
 ```text
 assets
-lfs
+littlefs
 ```
 
 with no overlap.
@@ -1211,7 +1211,7 @@ with no overlap.
 The LittleFS partition label is exactly:
 
 ```text
-lfs
+littlefs
 ```
 
 ### Mount
@@ -1225,7 +1225,7 @@ LittleFS mounts at:
 from:
 
 ```text
-lfs
+littlefs
 ```
 
 ### Assets
@@ -1258,7 +1258,7 @@ FTP cannot escape `/littlefs`.
 
 ### Formatting
 
-A failed mount does NOT automatically format the `lfs` partition.
+A failed mount does NOT automatically format the `littlefs` partition.
 
 ### Build
 
@@ -1276,7 +1276,7 @@ Explain:
 
 ```text
 assets → existing Assets filesystem
-lfs    → LittleFS
+littlefs    → LittleFS
 ```
 
 ## B. Changed files
@@ -1302,7 +1302,7 @@ for every changed partition.
 Explicitly show:
 
 ```text
-partition label = lfs
+partition label = littlefs
 mount point     = /littlefs
 ```
 
@@ -1363,7 +1363,7 @@ Do not provide pseudo-code.
 The implementation must use:
 
 ```text
-partition label = lfs
+partition label = littlefs
 mount point     = /littlefs
 ```
 
