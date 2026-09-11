@@ -36,10 +36,8 @@ public:
     uint64_t GetLastCommunicationMs() const;
     size_t GetValidObjectCount() const;
 
-    bool RegisterCommunicationObject(const KnxCommunicationObject& object,
-                                     std::string& error);
-    bool GetCommunicationObject(const std::string& id,
-                                KnxCommunicationObject& object) const;
+    bool RegisterCommunicationObject(const KnxCommunicationObject& object, std::string& error);
+    bool GetCommunicationObject(const std::string& id, KnxCommunicationObject& object) const;
     bool GetCommunicationObjectByAddress(const std::string& group_address,
                                          KnxCommunicationObject& object) const;
     std::vector<KnxCommunicationObject> GetObjects(size_t offset, size_t limit) const;
@@ -47,12 +45,12 @@ public:
 
     bool ImportConfiguration(const std::string& json_text, size_t& object_count,
                              std::string& error);
+    bool ImportConfigurationFile(size_t& object_count, std::string& error);
 
     bool RequestRead(const std::string& group_address, std::string& error);
-    bool WriteObject(const std::string& id, const std::string& value,
-                     std::string& error);
-    bool WriteGroupAddress(const std::string& group_address,
-                           const std::string& value, std::string& error);
+    bool WriteObject(const std::string& id, const std::string& value, std::string& error);
+    bool WriteGroupAddress(const std::string& group_address, const std::string& value,
+                           std::string& error);
 
 private:
     static constexpr uint32_t kStartNotification = 1U << 0;
@@ -70,10 +68,10 @@ private:
     bool StopTransport();
     bool StopTransportLocked();
     void HandleTelegram(const knx_telegram_t& telegram);
-    bool Send(knx_address_t group_address, knx_command_t command,
-              const uint8_t* data, size_t length, std::string& error);
-    bool WriteObject(const KnxCommunicationObject& object,
-                     const std::string& value, std::string& error);
+    bool Send(knx_address_t group_address, knx_command_t command, const uint8_t* data,
+              size_t length, std::string& error);
+    bool WriteObject(const KnxCommunicationObject& object, const std::string& value,
+                     std::string& error);
     void SetState(KnxServiceState state, const std::string& error = "");
 
     mutable std::mutex mutex_;

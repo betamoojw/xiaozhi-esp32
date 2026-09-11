@@ -24,7 +24,11 @@ configuration exists, otherwise from the read-only factory Assets image.
 Commissioning uses the owner-only `self.knx.import_configuration` MCP tool.
 MCP imports validate and commit the complete registry to NVS before changing
 the active registry. Successful imports are applied immediately and survive
-reboot.
+reboot. The canonical configuration is also synchronized atomically to
+`/littlefs/interfaces/knxConfig.json` for file-based access. FTP commissioning
+uploads to `knxConfig.json.tmp`, then uses the owner-only
+`self.knx.import_configuration_file` tool to validate, persist, publish, and
+activate it.
 
 See [the integration guide](../../docs/knx_ip_integration.md),
 [configuration reference](../../docs/knx_ip_configuration.md), and

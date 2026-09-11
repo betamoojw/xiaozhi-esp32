@@ -1076,11 +1076,11 @@ menu "FTP Server Configuration"
 
     config XIAOZHI_FTP_SERVER_ROOT
         string "FTP filesystem root"
-        default "assets"
+        default "/littlefs"
         depends on XIAOZHI_FTP_SERVER
         help
-            Path of the existing assets VFS filesystem. The FTP server never
-            mounts, formats, or unmounts this filesystem.
+            Absolute path to the LittleFS mount or one of its subdirectories.
+            Paths outside /littlefs are rejected at runtime.
 
 endmenu
 

@@ -4,6 +4,7 @@
 #include "audio_codec.h"
 #include "board.h"
 #include "display.h"
+#include "littlefs_storage.h"
 #include "mcp_server.h"
 #include "mqtt_protocol.h"
 #include "settings.h"
@@ -66,6 +67,10 @@ bool Application::SetDeviceState(DeviceState state) { return state_machine_.Tran
 void Application::Initialize() {
     auto& board = Board::GetInstance();
     SetDeviceState(kDeviceStateStarting);
+
+    if (!LittleFsStorage::GetInstance().Mount()) {
+        ESP_LOGW(TAG, "LittleFS is unavailable; filesystem-dependent services are disabled");
+    }
 
     // Setup the display
     auto display = board.GetDisplay();

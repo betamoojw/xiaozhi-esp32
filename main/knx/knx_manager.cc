@@ -62,23 +62,21 @@ bool KnxManager::Initialize() {
     if (!configuration_valid_) {
         state_ = KnxServiceState::kError;
     }
-    if (xTaskCreate(LifecycleTaskEntry, "knx_lifecycle", 4096, this, 3,
-                    &lifecycle_task_) != pdPASS) {
+    if (xTaskCreate(LifecycleTaskEntry, "knx_lifecycle", 4096, this, 3, &lifecycle_task_) !=
+        pdPASS) {
         lifecycle_task_ = nullptr;
         state_ = KnxServiceState::kError;
         last_error_ = "Could not create KNX lifecycle task";
         return false;
     }
-    ESP_LOGI(kTag, "Loaded %u KNX communication objects",
-             static_cast<unsigned>(objects_.size()));
+    ESP_LOGI(kTag, "Loaded %u KNX communication objects", static_cast<unsigned>(objects_.size()));
     return state_ != KnxServiceState::kError;
 }
 
 bool KnxManager::LoadConfiguration() {
     std::string json_text;
     bool persisted_configuration_found = false;
-    if (!KnxLoadPersistedConfiguration(json_text, persisted_configuration_found,
-                                       last_error_)) {
+    if (!KnxLoadPersistedConfiguration(json_text, persisted_configuration_found, last_error_)) {
         ESP_LOGE(kTag, "%s", last_error_.c_str());
         return false;
     }
@@ -91,7 +89,8 @@ bool KnxManager::LoadConfiguration() {
         ESP_LOGI(kTag, "Loading factory KNX configuration from assets");
         if (!KnxLoadFactoryConfiguration(json_text, last_error_)) {
             ESP_LOGW(kTag,
-                     "Factory KNX configuration asset unavailable; using emergency built-in configuration: %s",
+                     "Factory KNX configuration asset unavailable; using emergency built-in "
+                     "configuration: %s",
                      last_error_.c_str());
             json_text = kValidConfiguration;
             factory_configuration_selected = false;
@@ -111,8 +110,8 @@ bool KnxManager::LoadConfiguration() {
                  "Factory KNX configuration is invalid; using emergency built-in configuration: %s",
                  last_error_.c_str());
         if (KnxParseConfiguration(kValidConfiguration, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
-                                  CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects,
-                                  canonical_json, last_error_)) {
+                                  CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects, canonical_json,
+                                  last_error_)) {
             objects_ = std::move(objects);
             return true;
         }
@@ -120,20 +119,25 @@ bool KnxManager::LoadConfiguration() {
         return false;
     }
     objects_ = std::move(objects);
+    std::string file_error;
+    if (!KnxWriteRuntimeConfiguration(canonical_json, file_error)) {
+        ESP_LOGW(kTag, "Could not synchronize KNX runtime file: %s", file_error.c_str());
+    }
     return true;
 }
 
 bool KnxManager::RegisterCommunicationObject(const KnxCommunicationObject& object,
                                              std::string& error) {
     std::lock_guard<std::mutex> lock(mutex_);
-    const auto duplicate_id = std::find_if(objects_.begin(), objects_.end(),
-        [&object](const auto& existing) { return existing.id == object.id; });
+    const auto duplicate_id =
+        std::find_if(objects_.begin(), objects_.end(),
+                     [&object](const auto& existing) { return existing.id == object.id; });
     if (duplicate_id != objects_.end()) {
         error = "Duplicate KNX object ID: " + object.id;
         return false;
     }
-    const auto duplicate_address = std::find_if(objects_.begin(), objects_.end(),
-        [&object](const auto& existing) {
+    const auto duplicate_address =
+        std::find_if(objects_.begin(), objects_.end(), [&object](const auto& existing) {
             return existing.parsed_group_address == object.parsed_group_address;
         });
     if (duplicate_address != objects_.end()) {
@@ -144,22 +148,26 @@ bool KnxManager::RegisterCommunicationObject(const KnxCommunicationObject& objec
     return true;
 }
 
-bool KnxManager::ImportConfiguration(const std::string& json_text,
-                                     size_t& object_count, std::string& error) {
+bool KnxManager::ImportConfiguration(const std::string& json_text, size_t& object_count,
+                                     std::string& error) {
     std::lock_guard<std::mutex> import_lock(import_mutex_);
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
     if (!KnxParseConfiguration(json_text, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
-                               CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects,
-                               canonical_json, error)) {
+                               CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects, canonical_json,
+                               error)) {
         return false;
     }
 
+    if (!KnxWriteRuntimeConfiguration(canonical_json, error)) {
+        ESP_LOGE(kTag, "%s", error.c_str());
+        return false;
+    }
     if (!KnxPersistConfiguration(canonical_json, error)) {
         ESP_LOGE(kTag, "%s", error.c_str());
         return false;
     }
-    ESP_LOGI(kTag, "Persisted KNX configuration to NVS");
+    ESP_LOGI(kTag, "Published KNX runtime file and persisted configuration to NVS");
 
     bool network_available = false;
     {
@@ -170,8 +178,8 @@ bool KnxManager::ImportConfiguration(const std::string& json_text,
         last_error_.clear();
         force_restart_ = true;
         network_available = network_available_ && requested_netif_ != nullptr;
-        state_ = network_available ? KnxServiceState::kStarting
-                                   : KnxServiceState::kWaitingForNetwork;
+        state_ =
+            network_available ? KnxServiceState::kStarting : KnxServiceState::kWaitingForNetwork;
     }
     if (network_available && lifecycle_task_ != nullptr) {
         xTaskNotify(lifecycle_task_, kStartNotification, eSetBits);
@@ -183,8 +191,7 @@ bool KnxManager::ImportConfiguration(const std::string& json_text,
 
 void KnxManager::OnNetworkConnected(esp_netif_t* netif) {
     esp_netif_ip_info_t ip_info = {};
-    const bool have_ip = netif != nullptr &&
-                         esp_netif_get_ip_info(netif, &ip_info) == ESP_OK &&
+    const bool have_ip = netif != nullptr && esp_netif_get_ip_info(netif, &ip_info) == ESP_OK &&
                          ip_info.ip.addr != 0;
     {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -198,9 +205,8 @@ void KnxManager::OnNetworkConnected(esp_netif_t* netif) {
             state_ = KnxServiceState::kError;
         } else if (!have_ip) {
             state_ = KnxServiceState::kError;
-            last_error_ = netif == nullptr
-                ? "Active network does not expose an ESP-IDF netif"
-                : "Active network does not have an IPv4 address";
+            last_error_ = netif == nullptr ? "Active network does not expose an ESP-IDF netif"
+                                           : "Active network does not have an IPv4 address";
         }
     }
     if (lifecycle_task_ != nullptr && have_ip && configuration_valid_) {
@@ -227,16 +233,15 @@ void KnxManager::LifecycleTask() {
     bool retry = false;
     while (true) {
         uint32_t notifications = 0;
-        const TickType_t timeout = retry
-            ? pdMS_TO_TICKS(CONFIG_XIAOZHI_KNX_IP_RECONNECT_INTERVAL_MS)
-            : portMAX_DELAY;
+        const TickType_t timeout =
+            retry ? pdMS_TO_TICKS(CONFIG_XIAOZHI_KNX_IP_RECONNECT_INTERVAL_MS) : portMAX_DELAY;
         const BaseType_t notified = xTaskNotifyWait(0, UINT32_MAX, &notifications, timeout);
 
         bool network_available = false;
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            network_available = configuration_valid_ && network_available_ &&
-                                requested_netif_ != nullptr;
+            network_available =
+                configuration_valid_ && network_available_ && requested_netif_ != nullptr;
         }
         if (!network_available) {
             retry = !StopTransport();
@@ -284,8 +289,7 @@ bool KnxManager::StartTransport() {
     }
 
     knx_address_t physical_address = 0;
-    if (!KnxParsePhysicalAddress(CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS,
-                                 physical_address)) {
+    if (!KnxParsePhysicalAddress(CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS, physical_address)) {
         SetState(KnxServiceState::kError, "Invalid configured KNX physical address");
         return false;
     }
@@ -335,8 +339,8 @@ bool KnxManager::StartTransport() {
     esp_netif_get_ip_info(netif, &ip_info);
     active_ipv4_ = ip_info.ip.addr;
     SetState(KnxServiceState::kRunning);
-    ESP_LOGI(kTag, "KNX routing started on %s:%d",
-             CONFIG_XIAOZHI_KNX_IP_MULTICAST_ADDRESS, CONFIG_XIAOZHI_KNX_IP_PORT);
+    ESP_LOGI(kTag, "KNX routing started on %s:%d", CONFIG_XIAOZHI_KNX_IP_MULTICAST_ADDRESS,
+             CONFIG_XIAOZHI_KNX_IP_PORT);
     return true;
 }
 
@@ -393,16 +397,14 @@ void KnxManager::HandleTelegram(const knx_telegram_t& telegram) {
             continue;
         }
         KnxValue value;
-        if (KnxDecodeValue(object.datapoint_type, telegram.data,
-                           telegram.data_length, value)) {
+        if (KnxDecodeValue(object.datapoint_type, telegram.data, telegram.data_length, value)) {
             object.current_value = value;
             object.valid = true;
             object.last_update_ms = timestamp;
             last_communication_ms_ = timestamp;
 #if CONFIG_XIAOZHI_KNX_IP_DEBUG
             ESP_LOGI(kTag, "Received %s %s=%s", object.group_address.c_str(),
-                     KnxDptName(object.datapoint_type),
-                     KnxValueToString(value).c_str());
+                     KnxDptName(object.datapoint_type), KnxValueToString(value).c_str());
 #endif
         } else {
             last_error_ = "Could not decode KNX value for " + object.id;
@@ -411,8 +413,8 @@ void KnxManager::HandleTelegram(const knx_telegram_t& telegram) {
     }
 }
 
-bool KnxManager::Send(knx_address_t group_address, knx_command_t command,
-                      const uint8_t* data, size_t length, std::string& error) {
+bool KnxManager::Send(knx_address_t group_address, knx_command_t command, const uint8_t* data,
+                      size_t length, std::string& error) {
     std::lock_guard<std::mutex> transport_lock(transport_mutex_);
     if (handle_ == nullptr) {
         error = "KNX routing is not running";
@@ -435,6 +437,17 @@ bool KnxManager::Send(knx_address_t group_address, knx_command_t command,
     return true;
 }
 
+bool KnxManager::ImportConfigurationFile(size_t& object_count, std::string& error) {
+    std::string json_text;
+    if (!KnxLoadRuntimeConfigurationUpload(json_text, error)) {
+        return false;
+    }
+    if (!ImportConfiguration(json_text, object_count, error)) {
+        return false;
+    }
+    return true;
+}
+
 bool KnxManager::RequestRead(const std::string& group_address, std::string& error) {
     KnxCommunicationObject object;
     if (!GetCommunicationObjectByAddress(group_address, object)) {
@@ -449,8 +462,7 @@ bool KnxManager::RequestRead(const std::string& group_address, std::string& erro
     return Send(object.parsed_group_address, KNX_COMMAND_READ, &apdu, 1, error);
 }
 
-bool KnxManager::WriteObject(const std::string& id, const std::string& value,
-                             std::string& error) {
+bool KnxManager::WriteObject(const std::string& id, const std::string& value, std::string& error) {
     KnxCommunicationObject object;
     if (!GetCommunicationObject(id, object)) {
         error = "Unknown KNX object ID";
@@ -459,8 +471,8 @@ bool KnxManager::WriteObject(const std::string& id, const std::string& value,
     return WriteObject(object, value, error);
 }
 
-bool KnxManager::WriteGroupAddress(const std::string& group_address,
-                                   const std::string& value, std::string& error) {
+bool KnxManager::WriteGroupAddress(const std::string& group_address, const std::string& value,
+                                   std::string& error) {
     KnxCommunicationObject object;
     if (!GetCommunicationObjectByAddress(group_address, object)) {
         error = "Unknown KNX group address";
@@ -469,8 +481,8 @@ bool KnxManager::WriteGroupAddress(const std::string& group_address,
     return WriteObject(object, value, error);
 }
 
-bool KnxManager::WriteObject(const KnxCommunicationObject& object,
-                             const std::string& text, std::string& error) {
+bool KnxManager::WriteObject(const KnxCommunicationObject& object, const std::string& text,
+                             std::string& error) {
     if (!object.writable) {
         error = "KNX communication object is not writable";
         return false;
@@ -486,15 +498,15 @@ bool KnxManager::WriteObject(const KnxCommunicationObject& object,
                 KnxDptName(object.datapoint_type);
         return false;
     }
-    return Send(object.parsed_group_address, KNX_COMMAND_WRITE,
-                encoded.data(), encoded.size(), error);
+    return Send(object.parsed_group_address, KNX_COMMAND_WRITE, encoded.data(), encoded.size(),
+                error);
 }
 
 bool KnxManager::GetCommunicationObject(const std::string& id,
                                         KnxCommunicationObject& object) const {
     std::lock_guard<std::mutex> lock(mutex_);
     const auto found = std::find_if(objects_.begin(), objects_.end(),
-        [&id](const auto& candidate) { return candidate.id == id; });
+                                    [&id](const auto& candidate) { return candidate.id == id; });
     if (found == objects_.end()) {
         return false;
     }
@@ -502,15 +514,15 @@ bool KnxManager::GetCommunicationObject(const std::string& id,
     return true;
 }
 
-bool KnxManager::GetCommunicationObjectByAddress(
-    const std::string& group_address, KnxCommunicationObject& object) const {
+bool KnxManager::GetCommunicationObjectByAddress(const std::string& group_address,
+                                                 KnxCommunicationObject& object) const {
     knx_address_t parsed_address = 0;
     if (!KnxParseGroupAddress(group_address, parsed_address)) {
         return false;
     }
     std::lock_guard<std::mutex> lock(mutex_);
-    const auto found = std::find_if(objects_.begin(), objects_.end(),
-        [parsed_address](const auto& candidate) {
+    const auto found =
+        std::find_if(objects_.begin(), objects_.end(), [parsed_address](const auto& candidate) {
             return candidate.parsed_group_address == parsed_address;
         });
     if (found == objects_.end()) {
@@ -520,8 +532,7 @@ bool KnxManager::GetCommunicationObjectByAddress(
     return true;
 }
 
-std::vector<KnxCommunicationObject> KnxManager::GetObjects(size_t offset,
-                                                           size_t limit) const {
+std::vector<KnxCommunicationObject> KnxManager::GetObjects(size_t offset, size_t limit) const {
     std::lock_guard<std::mutex> lock(mutex_);
     if (offset >= objects_.size()) {
         return {};
@@ -548,11 +559,16 @@ KnxServiceState KnxManager::GetState() const {
 
 const char* KnxManager::GetStateName() const {
     switch (GetState()) {
-        case KnxServiceState::kDisabled: return "disabled";
-        case KnxServiceState::kWaitingForNetwork: return "waiting_for_network";
-        case KnxServiceState::kStarting: return "starting";
-        case KnxServiceState::kRunning: return "running";
-        case KnxServiceState::kError: return "error";
+        case KnxServiceState::kDisabled:
+            return "disabled";
+        case KnxServiceState::kWaitingForNetwork:
+            return "waiting_for_network";
+        case KnxServiceState::kStarting:
+            return "starting";
+        case KnxServiceState::kRunning:
+            return "running";
+        case KnxServiceState::kError:
+            return "error";
     }
     return "unknown";
 }
@@ -570,7 +586,8 @@ std::string KnxManager::GetEndpoint() const {
 std::string KnxManager::GetPhysicalAddress() const {
     knx_address_t address = 0;
     return KnxParsePhysicalAddress(CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS, address)
-        ? KnxFormatPhysicalAddress(address) : "invalid";
+               ? KnxFormatPhysicalAddress(address)
+               : "invalid";
 }
 
 uint64_t KnxManager::GetLastCommunicationMs() const {

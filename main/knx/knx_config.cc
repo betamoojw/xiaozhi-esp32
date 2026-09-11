@@ -2,14 +2,19 @@
 
 #ifndef XIAOZHI_KNX_CONFIG_PARSER_ONLY
 #include "assets.h"
+#include "littlefs_storage.h"
 #include "settings.h"
 
 #include <esp_err.h>
+#include <unistd.h>
 #endif
 #include <cJSON.h>
 
 #include <algorithm>
+#include <cerrno>
+#include <cstdio>
 #include <cstring>
+#include <fstream>
 #include <iterator>
 #include <set>
 #include <utility>
@@ -22,15 +27,15 @@ constexpr size_t kMaximumDescriptionLength = 192;
 
 bool IsKnownField(const char* name) {
     constexpr const char* kFields[] = {
-        "id", "name", "description", "group_address", "datapoint_type",
-        "readable", "writable",
+        "id", "name", "description", "group_address", "datapoint_type", "readable", "writable",
     };
-    return name != nullptr && std::any_of(std::begin(kFields), std::end(kFields),
-        [name](const char* field) { return std::strcmp(name, field) == 0; });
+    return name != nullptr &&
+           std::any_of(std::begin(kFields), std::end(kFields),
+                       [name](const char* field) { return std::strcmp(name, field) == 0; });
 }
 
-bool JsonString(const cJSON* object, const char* name, std::string& value,
-                bool required, size_t maximum_length) {
+bool JsonString(const cJSON* object, const char* name, std::string& value, bool required,
+                size_t maximum_length) {
     const cJSON* item = cJSON_GetObjectItemCaseSensitive(object, name);
     if (item == nullptr && !required) {
         value.clear();
@@ -53,15 +58,13 @@ bool JsonBoolean(const cJSON* object, const char* name, bool& value) {
 }
 
 bool ValidateObject(const KnxCommunicationObject& object,
-                    const std::vector<KnxCommunicationObject>& objects,
-                    std::string& error) {
+                    const std::vector<KnxCommunicationObject>& objects, std::string& error) {
     if (!object.readable && !object.writable) {
         error = "KNX object must be readable, writable, or both";
         return false;
     }
-    if (std::any_of(objects.begin(), objects.end(), [&object](const auto& existing) {
-            return existing.id == object.id;
-        })) {
+    if (std::any_of(objects.begin(), objects.end(),
+                    [&object](const auto& existing) { return existing.id == object.id; })) {
         error = "Duplicate KNX object ID: " + object.id;
         return false;
     }
@@ -95,8 +98,7 @@ bool KnxLoadFactoryConfiguration(std::string& json_text, std::string& error) {
     return true;
 }
 
-bool KnxLoadPersistedConfiguration(std::string& json_text, bool& found,
-                                   std::string& error) {
+bool KnxLoadPersistedConfiguration(std::string& json_text, bool& found, std::string& error) {
     json_text.clear();
     found = false;
     error.clear();
@@ -106,8 +108,8 @@ bool KnxLoadPersistedConfiguration(std::string& json_text, bool& found,
         return true;
     }
     if (result != ESP_OK) {
-        error = std::string("Could not load KNX configuration from NVS: ") +
-                esp_err_to_name(result);
+        error =
+            std::string("Could not load KNX configuration from NVS: ") + esp_err_to_name(result);
         return false;
     }
     found = true;
@@ -123,8 +125,74 @@ bool KnxPersistConfiguration(const std::string& json_text, std::string& error) {
     Settings settings(kKnxSettingsNamespace, true);
     const esp_err_t result = settings.SetStringAndCommit(kKnxSettingsKey, json_text);
     if (result != ESP_OK) {
-        error = std::string("Could not persist KNX configuration to NVS: ") +
-                esp_err_to_name(result);
+        error =
+            std::string("Could not persist KNX configuration to NVS: ") + esp_err_to_name(result);
+        return false;
+    }
+    return true;
+}
+
+bool KnxLoadRuntimeConfigurationUpload(std::string& json_text, std::string& error) {
+    json_text.clear();
+    error.clear();
+    if (!LittleFsStorage::GetInstance().IsMounted()) {
+        error = "LittleFS is not mounted";
+        return false;
+    }
+
+    std::ifstream input(kKnxRuntimeConfigurationUploadPath, std::ios::binary | std::ios::ate);
+    if (!input) {
+        error = std::string("Could not open KNX configuration upload: ") + std::strerror(errno);
+        return false;
+    }
+    const std::streamsize size = input.tellg();
+    if (size <= 0 || static_cast<size_t>(size) > kKnxMaximumConfigurationLength) {
+        error = "KNX configuration upload is empty or exceeds the size limit";
+        return false;
+    }
+    json_text.resize(static_cast<size_t>(size));
+    input.seekg(0);
+    if (!input.read(json_text.data(), size)) {
+        error = "Could not read the complete KNX configuration upload";
+        json_text.clear();
+        return false;
+    }
+    return true;
+}
+
+bool KnxWriteRuntimeConfiguration(const std::string& json_text, std::string& error) {
+    error.clear();
+    if (!LittleFsStorage::GetInstance().IsMounted()) {
+        error = "LittleFS is not mounted";
+        return false;
+    }
+    if (json_text.empty() || json_text.size() > kKnxMaximumConfigurationLength) {
+        error = "KNX configuration is empty or exceeds the size limit";
+        return false;
+    }
+
+    const std::string write_path = kKnxRuntimeConfigurationUploadPath;
+    FILE* file = std::fopen(write_path.c_str(), "wb");
+    if (file == nullptr) {
+        error = std::string("Could not create KNX configuration file: ") + std::strerror(errno);
+        return false;
+    }
+
+    bool success = std::fwrite(json_text.data(), 1, json_text.size(), file) == json_text.size();
+    if (success) {
+        success = std::fflush(file) == 0 && fsync(fileno(file)) == 0;
+    }
+    if (std::fclose(file) != 0) {
+        success = false;
+    }
+    if (!success) {
+        error = std::string("Could not write KNX configuration file: ") + std::strerror(errno);
+        std::remove(write_path.c_str());
+        return false;
+    }
+    if (std::rename(write_path.c_str(), kKnxRuntimeConfigurationPath) != 0) {
+        error = std::string("Could not publish KNX configuration file: ") + std::strerror(errno);
+        std::remove(write_path.c_str());
         return false;
     }
     return true;
@@ -143,8 +211,7 @@ bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
         return false;
     }
 
-    cJSON* root = cJSON_ParseWithLengthOpts(json_text.c_str(), json_text.size() + 1,
-                                            nullptr, true);
+    cJSON* root = cJSON_ParseWithLengthOpts(json_text.c_str(), json_text.size() + 1, nullptr, true);
     if (!cJSON_IsArray(root)) {
         cJSON_Delete(root);
         error = "KNX object configuration must be a JSON array";
@@ -153,7 +220,7 @@ bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
 
     bool valid = true;
     const cJSON* item = nullptr;
-    cJSON_ArrayForEach(item, root) {
+    cJSON_ArrayForEach (item, root) {
         if (objects.size() >= maximum_objects || !cJSON_IsObject(item)) {
             error = "KNX object configuration exceeds limits or contains a non-object";
             valid = false;

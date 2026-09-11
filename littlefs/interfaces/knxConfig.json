@@ -1,0 +1,272 @@
+[
+    {
+        "id": "living_room_light_command",
+        "name": "Living Room Light Command",
+        "group_address": "1/0/1",
+        "datapoint_type": "DPT-1.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "living_room_light_status",
+        "name": "Living Room Light Status",
+        "group_address": "1/0/2",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "kitchen_light_command",
+        "name": "Kitchen Light Command",
+        "group_address": "1/0/3",
+        "datapoint_type": "DPT-1.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "kitchen_light_status",
+        "name": "Kitchen Light Status",
+        "group_address": "1/0/4",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "bedroom_light_command",
+        "name": "Bedroom Light Command",
+        "group_address": "1/0/5",
+        "datapoint_type": "DPT-1.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "bedroom_light_status",
+        "name": "Bedroom Light Status",
+        "group_address": "1/0/6",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": false
+    },
+
+    {
+        "id": "living_room_dimming_command",
+        "name": "Living Room Dimming Level",
+        "group_address": "2/0/1",
+        "datapoint_type": "DPT-5.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "living_room_dimming_status",
+        "name": "Living Room Dimming Status",
+        "group_address": "2/0/2",
+        "datapoint_type": "DPT-5.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "dining_room_dimming_command",
+        "name": "Dining Room Dimming Level",
+        "group_address": "2/0/3",
+        "datapoint_type": "DPT-5.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "dining_room_dimming_status",
+        "name": "Dining Room Dimming Status",
+        "group_address": "2/0/4",
+        "datapoint_type": "DPT-5.001",
+        "readable": true,
+        "writable": false
+    },
+
+    {
+        "id": "living_room_curtain_command",
+        "name": "Living Room Curtain Up Down",
+        "group_address": "3/0/1",
+        "datapoint_type": "DPT-1.008",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "living_room_curtain_position",
+        "name": "Living Room Curtain Position",
+        "group_address": "3/0/2",
+        "datapoint_type": "DPT-5.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "bedroom_curtain_command",
+        "name": "Bedroom Curtain Up Down",
+        "group_address": "3/0/3",
+        "datapoint_type": "DPT-1.008",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "bedroom_curtain_position",
+        "name": "Bedroom Curtain Position",
+        "group_address": "3/0/4",
+        "datapoint_type": "DPT-5.001",
+        "readable": true,
+        "writable": true
+    },
+
+    {
+        "id": "living_room_ac_power",
+        "name": "Living Room AC Power",
+        "group_address": "4/0/1",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "living_room_ac_mode",
+        "name": "Living Room AC Operating Mode",
+        "group_address": "4/0/2",
+        "datapoint_type": "DPT-20.105",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "living_room_ac_setpoint",
+        "name": "Living Room AC Temperature Setpoint",
+        "group_address": "4/0/3",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "living_room_ac_temperature",
+        "name": "Living Room AC Room Temperature",
+        "group_address": "4/0/4",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "bedroom_ac_power",
+        "name": "Bedroom AC Power",
+        "group_address": "4/0/5",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "bedroom_ac_setpoint",
+        "name": "Bedroom AC Temperature Setpoint",
+        "group_address": "4/0/6",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": true
+    },
+
+    {
+        "id": "ventilation_power",
+        "name": "Ventilation System Power",
+        "group_address": "5/0/1",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "ventilation_speed",
+        "name": "Ventilation Fan Speed",
+        "group_address": "5/0/2",
+        "datapoint_type": "DPT-5.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "ventilation_mode",
+        "name": "Ventilation Operating Mode",
+        "group_address": "5/0/3",
+        "datapoint_type": "DPT-20.102",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "indoor_co2",
+        "name": "Indoor CO2 Level",
+        "group_address": "5/0/4",
+        "datapoint_type": "DPT-9.008",
+        "readable": true,
+        "writable": false
+    },
+
+    {
+        "id": "floor_heating_power",
+        "name": "Floor Heating Main Power",
+        "group_address": "6/0/1",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "living_room_floor_heating_setpoint",
+        "name": "Living Room Floor Heating Setpoint",
+        "group_address": "6/0/2",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "living_room_floor_temperature",
+        "name": "Living Room Floor Temperature",
+        "group_address": "6/0/3",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "bedroom_floor_heating_setpoint",
+        "name": "Bedroom Floor Heating Setpoint",
+        "group_address": "6/0/4",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "bedroom_floor_temperature",
+        "name": "Bedroom Floor Temperature",
+        "group_address": "6/0/5",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": false
+    },
+
+    {
+        "id": "all_lights_off",
+        "name": "All Lights Off",
+        "group_address": "7/0/1",
+        "datapoint_type": "DPT-1.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "all_curtains_open",
+        "name": "All Curtains Open",
+        "group_address": "7/0/2",
+        "datapoint_type": "DPT-1.008",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "all_curtains_close",
+        "name": "All Curtains Close",
+        "group_address": "7/0/3",
+        "datapoint_type": "DPT-1.008",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "home_away_mode",
+        "name": "Home Away Mode",
+        "group_address": "7/0/4",
+        "datapoint_type": "DPT-1.001",
+        "readable": true,
+        "writable": true
+    }
+]

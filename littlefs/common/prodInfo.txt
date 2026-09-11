@@ -1,0 +1,3 @@
+Name=lckfb-szpi
+Model=1234
+Serial=12345678

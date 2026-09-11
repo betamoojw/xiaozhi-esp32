@@ -40,10 +40,11 @@ set(SOURCES "audio/audio_codec.cc"
             "settings.cc"
             "device_state_machine.cc"
             "assets.cc"
+            "storage/littlefs_storage.cc"
             "main.cc"
             )
 
-set(INCLUDE_DIRS "." "display" "display/lvgl_display" "display/lvgl_display/jpg" "audio" "audio/demuxer" "protocols")
+set(INCLUDE_DIRS "." "display" "display/lvgl_display" "display/lvgl_display/jpg" "audio" "audio/demuxer" "protocols" "storage")
 
 if(CONFIG_XIAOZHI_KNX_IP)
     list(APPEND SOURCES
@@ -1122,6 +1123,13 @@ idf_component_register(SRCS ${SOURCES}
                         xiaozhi-fonts
                         ${MAIN_PRIV_REQUIRES_EXTRA}
                     )
+
+partition_table_get_partition_info(littlefs_partition_size "--partition-name lfs" "size")
+if(littlefs_partition_size)
+    littlefs_create_partition_image(lfs "${PROJECT_DIR}/littlefs" FLASH_IN_PROJECT)
+else()
+    message(STATUS "Partition table has no lfs partition; LittleFS image is disabled")
+endif()
 
 # Keep project-owned C++ on GNU C++23. ESP-IDF 6 may default to a newer
 # dialect; pin the baseline so main/ does not depend on it.

@@ -1,17 +1,30 @@
 #include "ftp_server.h"
+#include "littlefs_storage.h"
 
 #include <ftp_server.hpp>
 
 #include <esp_log.h>
 
+#include <sys/stat.h>
 #include <cerrno>
 #include <cstring>
 #include <filesystem>
-#include <sys/stat.h>
 
 namespace {
 constexpr char kTag[] = "FTP_SERVER";
+
+bool IsConfinedRoot(const std::filesystem::path& configured_root,
+                    const std::filesystem::path& mount_point) {
+    const auto root = configured_root.lexically_normal();
+    const auto mount = mount_point.lexically_normal();
+    if (!root.is_absolute() || root == mount) {
+        return root == mount;
+    }
+    const auto relative = root.lexically_relative(mount);
+    return !relative.empty() && !relative.is_absolute() &&
+           *relative.begin() != std::filesystem::path("..");
 }
+}  // namespace
 
 FtpServerManager& FtpServerManager::GetInstance() {
     static FtpServerManager instance;
@@ -25,6 +38,18 @@ bool FtpServerManager::OnNetworkConnected(esp_netif_t* netif) {
     if (netif == nullptr || esp_netif_get_ip_info(netif, &ip_info) != ESP_OK ||
         ip_info.ip.addr == 0) {
         ESP_LOGE(kTag, "Cannot start FTP server without an active IPv4 interface");
+        return false;
+    }
+
+    auto& storage = LittleFsStorage::GetInstance();
+    if (!storage.IsMounted()) {
+        ESP_LOGE(kTag, "Cannot start FTP server because LittleFS is not mounted");
+        return false;
+    }
+    const std::filesystem::path configured_root(CONFIG_XIAOZHI_FTP_SERVER_ROOT);
+    if (!IsConfinedRoot(configured_root, storage.GetMountPoint())) {
+        ESP_LOGE(kTag, "FTP root %s must be inside %s", CONFIG_XIAOZHI_FTP_SERVER_ROOT,
+                 storage.GetMountPoint());
         return false;
     }
 
@@ -55,19 +80,17 @@ bool FtpServerManager::OnNetworkConnected(esp_netif_t* netif) {
         return false;
     }
 
-    auto server = std::make_unique<espp::FtpServer>(
-        ip_address, CONFIG_XIAOZHI_FTP_SERVER_PORT,
-        std::filesystem::path(CONFIG_XIAOZHI_FTP_SERVER_ROOT));
+    auto server = std::make_unique<espp::FtpServer>(ip_address, CONFIG_XIAOZHI_FTP_SERVER_PORT,
+                                                    configured_root.lexically_normal());
     if (!server->start()) {
-        ESP_LOGE(kTag, "Failed to start FTP server on port %d",
-                 CONFIG_XIAOZHI_FTP_SERVER_PORT);
+        ESP_LOGE(kTag, "Failed to start FTP server on port %d", CONFIG_XIAOZHI_FTP_SERVER_PORT);
         return false;
     }
 
     server_ = std::move(server);
     active_ipv4_ = ip_info.ip.addr;
-    ESP_LOGW(kTag, "Unauthenticated FTP server listening at ftp://%s:%d, root=%s",
-             ip_address, CONFIG_XIAOZHI_FTP_SERVER_PORT, CONFIG_XIAOZHI_FTP_SERVER_ROOT);
+    ESP_LOGW(kTag, "Unauthenticated FTP server listening at ftp://%s:%d, root=%s", ip_address,
+             CONFIG_XIAOZHI_FTP_SERVER_PORT, CONFIG_XIAOZHI_FTP_SERVER_ROOT);
     return true;
 }
 

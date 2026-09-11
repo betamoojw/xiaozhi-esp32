@@ -1,9 +1,10 @@
 # FTP Server
 
-The optional FTP server exposes an already-mounted ESP VFS filesystem through
-the managed `espp/ftp` component. It starts after XiaoZhi receives a network
-connected event and stops on network disconnect. FTP sessions run in the tasks
-owned by `espp/ftp`, outside the main application and audio tasks.
+The optional FTP server exposes the writable LittleFS filesystem mounted from
+partition `lfs` at `/littlefs`. It starts after XiaoZhi receives a network
+connected event and stops on network disconnect. FTP sessions run in tasks
+owned by the project-patched `espp/ftp` component, outside the main application
+and audio tasks.
 
 ## Configuration
 
@@ -11,21 +12,18 @@ Open `Xiaozhi Assistant -> FTP Server Configuration` in menuconfig.
 
 | Option | Default | Purpose |
 | --- | --- | --- |
-| `CONFIG_XIAOZHI_FTP_SERVER` | off | Compile and enable the FTP server |
+| `CONFIG_XIAOZHI_FTP_SERVER` | on | Compile and enable the FTP server |
 | `CONFIG_XIAOZHI_FTP_SERVER_PORT` | `21` | FTP control port |
-| `CONFIG_XIAOZHI_FTP_SERVER_ROOT` | `assets` | Root of the existing assets VFS filesystem |
+| `CONFIG_XIAOZHI_FTP_SERVER_ROOT` | `/littlefs` | Root inside the LittleFS VFS mount |
 
-The configured `assets` root must exist as a VFS directory before the
-network-connected event. The FTP feature deliberately does not mount, format,
-or unmount storage. A missing mount is logged and leaves the rest of the
-application running normally. The selected board is responsible for exposing
-the path without overwriting the packed assets partition used by the
-application. No partition table is changed by this feature.
+LittleFS is mounted before networking starts. FTP refuses to start if the mount
+is unavailable, if the configured root does not exist, or if the root is not
+`/littlefs` or one of its subdirectories. The packed `assets` partition is not
+mounted or exposed through FTP.
 
 ## FileZilla
 
-1. Enable the FTP server and ensure the selected board mounts the configured
-   filesystem before starting its network connection.
+1. Use a flash layout containing the `lfs` partition and enable the FTP server.
 2. Read the device IPv4 address from the `FTP_SERVER` startup log.
 3. In FileZilla, use plain FTP, the configured port, passive transfer mode, and
    any non-empty username and password.
@@ -41,17 +39,14 @@ The client must be able to reach those ports on the device network.
 FTP. Enable the server only on a trusted, isolated network and disable it in
 production builds that do not need file transfer.
 
-The upstream 1.x command handlers also do not enforce the configured root as a
-security sandbox against absolute paths or parent-directory traversal. Treat
-the server as having access to the device's mounted VFS paths, not only to the
-configured starting directory.
+The project pins and locally overrides `espp/ftp` 1.3.1 to normalize every
+path-bearing command. Absolute FTP paths are interpreted relative to the FTP
+root, parent-directory traversal is rejected, and the root itself cannot be
+removed or renamed. This applies to `CWD`, `CDUP`, `SIZE`, `RETR`, `STOR`,
+`DELE`, `MKD`, `RMD`, `RNFR`, and `RNTO`.
 
-Available operations ultimately depend on the mounted filesystem. In
-particular, ESP-IDF SPIFFS stores a flat namespace and does not provide real
-directories, so directory creation, removal, and navigation may fail even
-though the FTP protocol component implements `CWD`, `MKD`, and `RMD`. File
-upload, download, overwrite, delete, and rename are also subject to normal VFS
-errors such as a full filesystem, invalid path, or missing file.
+Available operations ultimately depend on LittleFS and are subject to normal
+VFS errors such as a full filesystem, invalid path, or missing file.
 
 The upstream component supports `USER`, `PASS`, `SYST`, `FEAT`, `PWD`, `CWD`,
 `CDUP`, `TYPE`, `PASV`, `PORT`, `LIST`, `SIZE`, `RETR`, `STOR`, `DELE`, `MKD`,
