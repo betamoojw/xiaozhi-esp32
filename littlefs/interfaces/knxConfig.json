@@ -1,304 +1,129 @@
 [
     {
-        "id": "living_room_light_command",
-        "name": "Living Room Light Command",
-        "description": "Command to turn on/off the living room light",
+        "id": "test_switch_command",
+        "name": "Test Switch Command",
         "group_address": "1/0/1",
         "datapoint_type": "DPT-1.001",
         "readable": false,
         "writable": true
     },
     {
-        "id": "living_room_light_status",
-        "name": "Living Room Light Status",
-        "description": "Status of the living room light",
+        "id": "test_switch_status",
+        "name": "Test Switch Status",
         "group_address": "1/0/2",
         "datapoint_type": "DPT-1.001",
         "readable": true,
         "writable": false
     },
     {
-        "id": "kitchen_light_command",
-        "name": "Kitchen Light Command",
-        "description": "Command to turn on/off the kitchen light",
+        "id": "test_temperature",
+        "name": "Test Temperature",
+        "group_address": "2/0/1",
+        "datapoint_type": "DPT-9.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_switch_command_2",
+        "name": "Test Switch Command 2",
         "group_address": "1/0/3",
         "datapoint_type": "DPT-1.001",
-        "readable": false,
+        "readable": true,
         "writable": true
     },
     {
-        "id": "kitchen_light_status",
-        "name": "Kitchen Light Status",
-        "description": "Status of the kitchen light",
-        "group_address": "1/0/4",
-        "datapoint_type": "DPT-1.001",
-        "readable": true,
-        "writable": false
-    },
-    {
-        "id": "bedroom_light_command",
-        "name": "Bedroom Light Command",
-        "description": "Command to turn on/off the bedroom light",
-        "group_address": "1/0/5",
-        "datapoint_type": "DPT-1.001",
-        "readable": false,
-        "writable": true
-    },
-    {
-        "id": "bedroom_light_status",
-        "name": "Bedroom Light Status",
-        "description": "Status of the bedroom light",
-        "group_address": "1/0/6",
-        "datapoint_type": "DPT-1.001",
-        "readable": true,
-        "writable": false
-    },
-
-    {
-        "id": "living_room_dimming_command",
-        "name": "Living Room Dimming Level",
-        "description": "Command to set the dimming level of the living room light",
-        "group_address": "2/0/1",
-        "datapoint_type": "DPT-5.001",
-        "readable": false,
-        "writable": true
-    },
-    {
-        "id": "living_room_dimming_status",
-        "name": "Living Room Dimming Status",
-        "description": "Status of the living room light dimming",
-        "group_address": "2/0/2",
-        "datapoint_type": "DPT-5.001",
-        "readable": true,
-        "writable": false
-    },
-    {
-        "id": "dining_room_dimming_command",
-        "name": "Dining Room Dimming Level",
-        "description": "Command to set the dimming level of the dining room light",
-        "group_address": "2/0/3",
-        "datapoint_type": "DPT-5.001",
-        "readable": false,
-        "writable": true
-    },
-    {
-        "id": "dining_room_dimming_status",
-        "name": "Dining Room Dimming Status",
-        "description": "Status of the dining room light dimming",
-        "group_address": "2/0/4",
-        "datapoint_type": "DPT-5.001",
-        "readable": true,
-        "writable": false
-    },
-
-    {
-        "id": "living_room_curtain_command",
-        "name": "Living Room Curtain Up Down",
-        "description": "Command to control the living room curtain",
+        "id": "test_percentage",
+        "name": "Test Percentage",
         "group_address": "3/0/1",
-        "datapoint_type": "DPT-1.008",
-        "readable": false,
+        "datapoint_type": "DPT-5.001",
+        "readable": true,
         "writable": true
     },
     {
-        "id": "living_room_curtain_position",
-        "name": "Living Room Curtain Position",
-        "description": "Position of the living room curtain",
+        "id": "test_angle",
+        "name": "Test Angle",
         "group_address": "3/0/2",
-        "datapoint_type": "DPT-5.001",
+        "datapoint_type": "DPT-5.003",
         "readable": true,
         "writable": true
     },
     {
-        "id": "bedroom_curtain_command",
-        "name": "Bedroom Curtain Up Down",
-        "description": "Command to control the bedroom curtain",
+        "id": "test_counter",
+        "name": "Test Counter",
         "group_address": "3/0/3",
-        "datapoint_type": "DPT-1.008",
-        "readable": false,
-        "writable": true
-    },
-    {
-        "id": "bedroom_curtain_position",
-        "name": "Bedroom Curtain Position",
-        "description": "Position of the bedroom curtain",
-        "group_address": "3/0/4",
-        "datapoint_type": "DPT-5.001",
-        "readable": true,
-        "writable": true
-    },
-
-    {
-        "id": "living_room_ac_power",
-        "name": "Living Room AC Power",
-        "description": "Power status of the living room air conditioning",
-        "group_address": "4/0/1",
-        "datapoint_type": "DPT-1.001",
+        "datapoint_type": "DPT-5.010",
         "readable": true,
         "writable": true
     },
     {
-        "id": "living_room_ac_mode",
-        "name": "Living Room AC Operating Mode",
-        "description": "Operating mode of the living room air conditioning",
-        "group_address": "4/0/2",
-        "datapoint_type": "DPT-20.105",
-        "readable": true,
-        "writable": true
-    },
-    {
-        "id": "living_room_ac_setpoint",
-        "name": "Living Room AC Temperature Setpoint",
-        "description": "Temperature setpoint for the living room air conditioning",
-        "group_address": "4/0/3",
-        "datapoint_type": "DPT-9.001",
-        "readable": true,
-        "writable": true
-    },
-    {
-        "id": "living_room_ac_temperature",
-        "name": "Living Room AC Room Temperature",
-        "description": "Current room temperature in the living room",
-        "group_address": "4/0/4",
+        "id": "test_temperature_celsius",
+        "name": "Test Temperature Celsius",
+        "group_address": "2/0/2",
         "datapoint_type": "DPT-9.001",
         "readable": true,
         "writable": false
     },
     {
-        "id": "bedroom_ac_power",
-        "name": "Bedroom AC Power",
-        "description": "Power status of the bedroom air conditioning",
-        "group_address": "4/0/5",
-        "datapoint_type": "DPT-1.001",
-        "readable": true,
-        "writable": true
-    },
-    {
-        "id": "bedroom_ac_setpoint",
-        "name": "Bedroom AC Temperature Setpoint",
-        "description": "Temperature setpoint for the bedroom air conditioning",
-        "group_address": "4/0/6",
-        "datapoint_type": "DPT-9.001",
-        "readable": true,
-        "writable": true
-    },
-
-    {
-        "id": "ventilation_power",
-        "name": "Ventilation System Power",
-        "description": "Power status of the ventilation system",
-        "group_address": "5/0/1",
-        "datapoint_type": "DPT-1.001",
-        "readable": true,
-        "writable": true
-    },
-    {
-        "id": "ventilation_speed",
-        "name": "Ventilation Fan Speed",
-        "description": "Speed of the ventilation fan",
-        "group_address": "5/0/2",
-        "datapoint_type": "DPT-5.001",
-        "readable": true,
-        "writable": true
-    },
-    {
-        "id": "ventilation_mode",
-        "name": "Ventilation Operating Mode",
-        "description": "Operating mode of the ventilation system",
-        "group_address": "5/0/3",
-        "datapoint_type": "DPT-20.102",
-        "readable": true,
-        "writable": true
-    },
-    {
-        "id": "indoor_co2",
-        "name": "Indoor CO2 Level",
-        "description": "Current CO2 level in the indoor environment",
-        "group_address": "5/0/4",
-        "datapoint_type": "DPT-9.008",
+        "id": "test_humidity",
+        "name": "Test Relative Humidity",
+        "group_address": "2/0/3",
+        "datapoint_type": "DPT-9.007",
         "readable": true,
         "writable": false
     },
-
     {
-        "id": "floor_heating_power",
-        "name": "Floor Heating Main Power",
-        "description": "Power status of the floor heating system",
+        "id": "test_illuminance",
+        "name": "Test Illuminance",
+        "group_address": "2/0/4",
+        "datapoint_type": "DPT-9.004",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_wind_speed",
+        "name": "Test Wind Speed",
+        "group_address": "2/0/5",
+        "datapoint_type": "DPT-9.005",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_pressure",
+        "name": "Test Pressure",
+        "group_address": "2/0/6",
+        "datapoint_type": "DPT-9.006",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "test_uint16",
+        "name": "Test Unsigned 16 Bit",
         "group_address": "6/0/1",
-        "datapoint_type": "DPT-1.001",
+        "datapoint_type": "DPT-7.001",
         "readable": true,
         "writable": true
     },
     {
-        "id": "living_room_floor_heating_setpoint",
-        "name": "Living Room Floor Heating Setpoint",
-        "description": "Temperature setpoint for the living room floor heating",
-        "group_address": "6/0/2",
-        "datapoint_type": "DPT-9.001",
-        "readable": true,
-        "writable": true
-    },
-    {
-        "id": "living_room_floor_temperature",
-        "name": "Living Room Floor Temperature",
-        "description": "Current temperature of the living room floor",
-        "group_address": "6/0/3",
-        "datapoint_type": "DPT-9.001",
-        "readable": true,
-        "writable": false
-    },
-    {
-        "id": "bedroom_floor_heating_setpoint",
-        "name": "Bedroom Floor Heating Setpoint",
-        "description": "Temperature setpoint for the bedroom floor heating",
-        "group_address": "6/0/4",
-        "datapoint_type": "DPT-9.001",
-        "readable": true,
-        "writable": true
-    },
-    {
-        "id": "bedroom_floor_temperature",
-        "name": "Bedroom Floor Temperature",
-        "description": "Current temperature of the bedroom floor",
-        "group_address": "6/0/5",
-        "datapoint_type": "DPT-9.001",
-        "readable": true,
-        "writable": false
-    },
-
-    {
-        "id": "all_lights_off",
-        "name": "All Lights Off",
-        "description": "Turn off all lights in the house",
+        "id": "test_uint32",
+        "name": "Test Unsigned 32 Bit",
         "group_address": "7/0/1",
-        "datapoint_type": "DPT-1.001",
-        "readable": false,
+        "datapoint_type": "DPT-12.001",
+        "readable": true,
         "writable": true
     },
     {
-        "id": "all_curtains_open",
-        "name": "All Curtains Open",
-        "description": "Open all curtains in the house",
+        "id": "test_int32",
+        "name": "Test Signed 32 Bit",
         "group_address": "7/0/2",
-        "datapoint_type": "DPT-1.008",
-        "readable": false,
+        "datapoint_type": "DPT-13.001",
+        "readable": true,
         "writable": true
     },
     {
-        "id": "all_curtains_close",
-        "name": "All Curtains Close",
-        "description": "Close all curtains in the house",
+        "id": "test_float32",
+        "name": "Test IEEE Float",
         "group_address": "7/0/3",
-        "datapoint_type": "DPT-1.008",
-        "readable": false,
-        "writable": true
-    },
-    {
-        "id": "home_away_mode",
-        "name": "Home Away Mode",
-        "description": "Set the home to away mode or back to home mode",
-        "group_address": "7/0/4",
-        "datapoint_type": "DPT-1.001",
+        "datapoint_type": "DPT-14.056",
         "readable": true,
         "writable": true
     }
