@@ -115,8 +115,8 @@ class LittleFsIntegrationTests(unittest.TestCase):
     def test_knx_configuration_is_not_packaged_as_an_asset(self):
         cmake = (ROOT / "main/CMakeLists.txt").read_text(encoding="utf-8")
         self.assertNotIn("KNX_FACTORY_CONFIGURATION", cmake)
-        self.assertNotIn("assets/interfaces/knxConfig.json", cmake)
-        self.assertFalse((ROOT / "main/assets/interfaces/knxConfig.json").exists())
+        self.assertNotIn("/littlefs/interfaces/knxConfig.json", cmake)
+        self.assertFalse((ROOT / "main//littlefs/interfaces/knxConfig.json").exists())
 
     def test_knx_loads_littlefs_before_legacy_nvs(self):
         manager = (ROOT / "main/knx/knx_manager.cc").read_text(encoding="utf-8")

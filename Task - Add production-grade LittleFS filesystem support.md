@@ -89,7 +89,7 @@ Do NOT:
 - change the Assets partition filesystem;
 - change `Assets` to use LittleFS;
 - expose `assets/interfaces` as a writable directory;
-- use `assets/interfaces/knxConfig.json` as a writable runtime file.
+- use `/littlefs/interfaces/knxConfig.json` as a writable runtime file.
 
 The existing Assets system must continue working unchanged.
 
@@ -492,7 +492,7 @@ Do not create or modify:
 The factory asset remains:
 
 ```text
-assets/interfaces/knxConfig.json
+/littlefs/interfaces/knxConfig.json
 ```
 
 while the writable runtime filesystem contains:
@@ -1082,7 +1082,7 @@ Assets
 still successfully accesses:
 
 ```text
-assets/interfaces/knxConfig.json
+/littlefs/interfaces/knxConfig.json
 ```
 
 and other existing packaged assets.
@@ -1320,7 +1320,7 @@ Explain:
 
 ```text
 factory:
-assets/interfaces/knxConfig.json
+/littlefs/interfaces/knxConfig.json
 
 runtime:
  /littlefs/interfaces/knxConfig.json

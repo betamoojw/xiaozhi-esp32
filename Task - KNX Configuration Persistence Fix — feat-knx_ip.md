@@ -22,7 +22,7 @@ using default KNX configuration
 The root cause is that the current KNX implementation incorrectly treats:
 
 ```text
-assets/interfaces/knxConfig.json
+/littlefs/interfaces/knxConfig.json
 ```
 
 as a normal writable POSIX filesystem file.
@@ -32,7 +32,7 @@ In this project, `assets` is a packed/read-only asset partition accessed through
 The implementation must therefore separate:
 
 1. **Factory/default configuration**
-   - `main/assets/interfaces/knxConfig.json`
+   - `main//littlefs/interfaces/knxConfig.json`
    - packaged into the read-only Assets image
    - accessed using `Assets::GetAssetData()`
 
@@ -152,7 +152,7 @@ remove the use of:
 
 ```cpp
 stat("assets/interfaces", ...)
-fopen("assets/interfaces/knxConfig.json", ...)
+fopen("/littlefs/interfaces/knxConfig.json", ...)
 fwrite(...)
 fflush(...)
 rename(...)
@@ -365,7 +365,7 @@ If NVS contains `"[]"`, that must be treated as a valid persisted empty registry
 The current implementation attempts to write:
 
 ```text
-assets/interfaces/knxConfig.json
+/littlefs/interfaces/knxConfig.json
 ```
 
 Replace that behavior.
@@ -471,7 +471,7 @@ Inspect the repository's asset packaging/build scripts.
 Confirm that:
 
 ```text
-main/assets/interfaces/knxConfig.json
+main//littlefs/interfaces/knxConfig.json
 ```
 
 is included in the generated Assets image with the runtime asset name:
@@ -513,7 +513,7 @@ must be a writable runtime directory.
 Document:
 
 ```text
-main/assets/interfaces/knxConfig.json
+main//littlefs/interfaces/knxConfig.json
 ```
 
 as the factory/default configuration.
@@ -556,7 +556,7 @@ main/knx/knx_mcp_tools.cc
 If the tool description currently says that it replaces:
 
 ```text
-assets/interfaces/knxConfig.json
+/littlefs/interfaces/knxConfig.json
 ```
 
 or otherwise implies that the file is writable at runtime, update the description.
@@ -825,7 +825,7 @@ Do not claim a hardware test passed if it was not actually performed.
 The task is complete only when:
 
 ```text
-main/assets/interfaces/knxConfig.json
+main//littlefs/interfaces/knxConfig.json
 ```
 
 is treated as a read-only factory asset,
@@ -844,8 +844,8 @@ The following must no longer occur:
 
 ```text
 stat("assets/interfaces")
-fopen("assets/interfaces/knxConfig.json")
-rename(..., "assets/interfaces/knxConfig.json")
+fopen("/littlefs/interfaces/knxConfig.json")
+rename(..., "/littlefs/interfaces/knxConfig.json")
 KNX configuration directory is unavailable
 ```
 
@@ -868,7 +868,7 @@ validate
 while:
 
 ```text
-main/assets/interfaces/knxConfig.json
+main//littlefs/interfaces/knxConfig.json
 ```
 
 remains the factory default fallback.
