@@ -1,4 +1,5 @@
 import csv
+import json
 import re
 import unittest
 from pathlib import Path
@@ -69,20 +70,16 @@ class LittleFsPartitionTests(unittest.TestCase):
 
 class LittleFsIntegrationTests(unittest.TestCase):
     def test_mount_uses_fixed_identifiers_without_autoformat(self):
-        source = (ROOT / "main/storage/littlefs_storage.cc").read_text(
-            encoding="utf-8"
-        )
-        self.assertIn('kPartitionLabel[] = "littlefs"', source)
-        self.assertIn('kMountPoint[] = "/littlefs"', source)
+        source = (ROOT / "main/application.cc").read_text(encoding="utf-8")
+        self.assertIn('kLittleFsPartitionLabel[] = "littlefs"', source)
+        self.assertIn('kLittleFsMountPoint[] = "/littlefs"', source)
         self.assertRegex(source, r"\.format_if_mount_failed\s*=\s*false")
-        mount_position = source.index("esp_vfs_littlefs_register")
-        format_position = source.index("esp_littlefs_format")
-        self.assertGreater(format_position, mount_position)
+        self.assertNotIn("esp_littlefs_format", source)
 
     def test_mount_precedes_network_start(self):
         source = (ROOT / "main/application.cc").read_text(encoding="utf-8")
         self.assertLess(
-            source.index("LittleFsStorage::GetInstance().Mount()"),
+            source.index("MountLittleFs()"),
             source.index("board.StartNetwork()"),
         )
 
@@ -96,12 +93,9 @@ class LittleFsIntegrationTests(unittest.TestCase):
         self.assertNotIn("main/assets", cmake[cmake.index("littlefs_create_partition_image"):])
         self.assertTrue((ROOT / "littlefs/interfaces").is_dir())
 
-    def test_ftp_defaults_to_littlefs_and_uses_local_security_override(self):
+    def test_ftp_defaults_to_littlefs_and_uses_managed_component(self):
         kconfig = (ROOT / "main/Kconfig.projbuild").read_text(encoding="utf-8")
         manifest = (ROOT / "main/idf_component.yml").read_text(encoding="utf-8")
-        session = (
-            ROOT / "third_party/ftp/include/ftp_client_session.hpp"
-        ).read_text(encoding="utf-8")
         root_option = re.search(
             r"config XIAOZHI_FTP_SERVER_ROOT(?P<body>.*?)(?:\n\s*config|\nendmenu)",
             kconfig,
@@ -109,20 +103,47 @@ class LittleFsIntegrationTests(unittest.TestCase):
         )
         self.assertIsNotNone(root_option)
         self.assertIn('default "/littlefs"', root_option.group("body"))
-        self.assertIn("override_path: ../third_party/ftp", manifest)
-        self.assertIn("resolve_path", session)
-        self.assertIn("lexically_normal", session)
-        self.assertIn("root_directory_", session)
-        self.assertNotRegex(
-            session,
-            r"std::filesystem::path full_path\s*=\s*current_directory_\s*/",
-        )
+        self.assertRegex(manifest, r"(?m)^\s*espp/ftp:\s*\^1\.3\.1\s*$")
+        self.assertNotIn("override_path: ../third_party/ftp", manifest)
 
-    def test_knx_factory_runtime_and_staging_paths_are_distinct(self):
+    def test_knx_runtime_and_staging_paths_use_littlefs(self):
         header = (ROOT / "main/knx/knx_config.h").read_text(encoding="utf-8")
-        self.assertIn('"interfaces/knxConfig.json"', header)
         self.assertIn('"/littlefs/interfaces/knxConfig.json"', header)
         self.assertIn('"/littlefs/interfaces/knxConfig.json.tmp"', header)
+        self.assertNotIn("kKnxFactoryConfigurationAsset", header)
+
+    def test_knx_configuration_is_not_packaged_as_an_asset(self):
+        cmake = (ROOT / "main/CMakeLists.txt").read_text(encoding="utf-8")
+        self.assertNotIn("KNX_FACTORY_CONFIGURATION", cmake)
+        self.assertNotIn("assets/interfaces/knxConfig.json", cmake)
+        self.assertFalse((ROOT / "main/assets/interfaces/knxConfig.json").exists())
+
+    def test_knx_loads_littlefs_before_legacy_nvs(self):
+        manager = (ROOT / "main/knx/knx_manager.cc").read_text(encoding="utf-8")
+        self.assertLess(
+            manager.index("KnxLoadRuntimeConfiguration("),
+            manager.index("KnxLoadLegacyConfiguration("),
+        )
+        self.assertIn("if (runtime_configuration_found)", manager)
+        self.assertNotIn("KnxPersistConfiguration", manager)
+
+    def test_knx_seed_fits_runtime_limits(self):
+        seed = ROOT / "littlefs/interfaces/knxConfig.json"
+        configuration = json.loads(seed.read_text(encoding="utf-8"))
+        header = (ROOT / "main/knx/knx_config.h").read_text(encoding="utf-8")
+        kconfig = (ROOT / "main/Kconfig.projbuild").read_text(encoding="utf-8")
+        maximum_length = int(
+            re.search(r"kKnxMaximumConfigurationLength = (\d+)", header).group(1)
+        )
+        maximum_objects = int(
+            re.search(
+                r"config XIAOZHI_KNX_IP_MAX_OBJECTS.*?default (\d+)",
+                kconfig,
+                re.DOTALL,
+            ).group(1)
+        )
+        self.assertLessEqual(seed.stat().st_size, maximum_length)
+        self.assertLessEqual(len(configuration), maximum_objects)
 
 
 if __name__ == "__main__":

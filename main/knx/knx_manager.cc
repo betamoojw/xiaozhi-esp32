@@ -9,41 +9,7 @@
 #include <algorithm>
 #include <set>
 
-namespace {
-
 constexpr char kTag[] = "KNX_MGR";
-
-constexpr char kValidConfiguration[] = R"json([
-    {
-        "id": "test_switch_command",
-        "name": "Test Switch Command",
-        "description": "Generic writable boolean used for KNX integration testing",
-        "group_address": "1/0/1",
-        "datapoint_type": "DPT-1.001",
-        "readable": false,
-        "writable": true
-    },
-    {
-        "id": "test_switch_status",
-        "name": "Test Switch Status",
-        "description": "Generic boolean feedback used for KNX integration testing",
-        "group_address": "1/0/2",
-        "datapoint_type": "DPT-1.001",
-        "readable": true,
-        "writable": false
-    },
-    {
-        "id": "test_temperature",
-        "name": "Test Temperature",
-        "description": "Generic two-byte floating-point sensor used for KNX integration testing",
-        "group_address": "2/0/1",
-        "datapoint_type": "DPT-9.001",
-        "readable": true,
-        "writable": false
-    }
-])json";
-
-}  // namespace
 
 KnxManager& KnxManager::GetInstance() {
     static KnxManager instance;
@@ -75,25 +41,27 @@ bool KnxManager::Initialize() {
 
 bool KnxManager::LoadConfiguration() {
     std::string json_text;
-    bool persisted_configuration_found = false;
-    if (!KnxLoadPersistedConfiguration(json_text, persisted_configuration_found, last_error_)) {
+    bool runtime_configuration_found = false;
+    if (!KnxLoadRuntimeConfiguration(json_text, runtime_configuration_found, last_error_)) {
         ESP_LOGE(kTag, "%s", last_error_.c_str());
         return false;
     }
 
-    bool factory_configuration_selected = false;
-    if (persisted_configuration_found) {
-        ESP_LOGI(kTag, "Loading KNX configuration from NVS");
+    bool initialize_runtime_configuration = false;
+    if (runtime_configuration_found) {
+        ESP_LOGI(kTag, "Loading KNX configuration from LittleFS");
     } else {
-        factory_configuration_selected = true;
-        ESP_LOGI(kTag, "Loading factory KNX configuration from assets");
-        if (!KnxLoadFactoryConfiguration(json_text, last_error_)) {
-            ESP_LOGW(kTag,
-                     "Factory KNX configuration asset unavailable; using emergency built-in "
-                     "configuration: %s",
-                     last_error_.c_str());
-            json_text = kValidConfiguration;
-            factory_configuration_selected = false;
+        bool legacy_configuration_found = false;
+        if (!KnxLoadLegacyConfiguration(json_text, legacy_configuration_found, last_error_)) {
+            ESP_LOGE(kTag, "%s", last_error_.c_str());
+            return false;
+        }
+        initialize_runtime_configuration = true;
+        if (legacy_configuration_found) {
+            ESP_LOGI(kTag, "Migrating legacy KNX configuration from NVS to LittleFS");
+        } else {
+            ESP_LOGI(kTag, "Initializing an empty KNX configuration in LittleFS");
+            json_text = "[]";
         }
     }
     std::vector<KnxCommunicationObject> objects;
@@ -102,27 +70,15 @@ bool KnxManager::LoadConfiguration() {
     if (!KnxParseConfiguration(json_text, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
                                CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects, canonical_json,
                                last_error_)) {
-        if (persisted_configuration_found || !factory_configuration_selected) {
-            ESP_LOGE(kTag, "%s", last_error_.c_str());
-            return false;
-        }
-        ESP_LOGE(kTag,
-                 "Factory KNX configuration is invalid; using emergency built-in configuration: %s",
-                 last_error_.c_str());
-        if (KnxParseConfiguration(kValidConfiguration, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
-                                  CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects, canonical_json,
-                                  last_error_)) {
-            objects_ = std::move(objects);
-            return true;
-        }
         ESP_LOGE(kTag, "%s", last_error_.c_str());
         return false;
     }
-    objects_ = std::move(objects);
-    std::string file_error;
-    if (!KnxWriteRuntimeConfiguration(canonical_json, file_error)) {
-        ESP_LOGW(kTag, "Could not synchronize KNX runtime file: %s", file_error.c_str());
+    if (initialize_runtime_configuration &&
+        !KnxWriteRuntimeConfiguration(canonical_json, last_error_)) {
+        ESP_LOGE(kTag, "Could not initialize KNX runtime configuration: %s", last_error_.c_str());
+        return false;
     }
+    objects_ = std::move(objects);
     return true;
 }
 
@@ -163,11 +119,7 @@ bool KnxManager::ImportConfiguration(const std::string& json_text, size_t& objec
         ESP_LOGE(kTag, "%s", error.c_str());
         return false;
     }
-    if (!KnxPersistConfiguration(canonical_json, error)) {
-        ESP_LOGE(kTag, "%s", error.c_str());
-        return false;
-    }
-    ESP_LOGI(kTag, "Published KNX runtime file and persisted configuration to NVS");
+    ESP_LOGI(kTag, "Persisted KNX configuration to LittleFS");
 
     bool network_available = false;
     {

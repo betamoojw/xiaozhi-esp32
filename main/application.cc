@@ -4,7 +4,6 @@
 #include "audio_codec.h"
 #include "board.h"
 #include "display.h"
-#include "littlefs_storage.h"
 #include "mcp_server.h"
 #include "mqtt_protocol.h"
 #include "settings.h"
@@ -19,13 +18,51 @@
 #endif
 
 #include <driver/gpio.h>
+#include <esp_err.h>
+#include <esp_littlefs.h>
 #include <esp_log.h>
 #include <arpa/inet.h>
 #include <cJSON.h>
 #include <cstring>
 #include <limits>
+#include <sys/stat.h>
 
 #define TAG "Application"
+
+namespace {
+constexpr char kLittleFsPartitionLabel[] = "littlefs";
+constexpr char kLittleFsMountPoint[] = "/littlefs";
+constexpr char kLittleFsInterfacesDirectory[] = "/littlefs/interfaces";
+
+bool MountLittleFs() {
+    const esp_vfs_littlefs_conf_t config = {
+        .base_path = kLittleFsMountPoint,
+        .partition_label = kLittleFsPartitionLabel,
+        .partition = nullptr,
+        .format_if_mount_failed = false,
+        .read_only = false,
+        .dont_mount = false,
+        .grow_on_mount = false,
+    };
+    const esp_err_t result = esp_vfs_littlefs_register(&config);
+    if (result != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to mount LittleFS: %s", esp_err_to_name(result));
+        return false;
+    }
+
+    struct stat info = {};
+    if (stat(kLittleFsInterfacesDirectory, &info) == 0 && S_ISDIR(info.st_mode)) {
+        return true;
+    }
+    if (mkdir(kLittleFsInterfacesDirectory, 0755) == 0) {
+        return true;
+    }
+
+    ESP_LOGE(TAG, "Failed to prepare LittleFS runtime directory");
+    esp_vfs_littlefs_unregister(kLittleFsPartitionLabel);
+    return false;
+}
+}  // namespace
 
 Application::Application() : notify_player_(audio_service_) {
     event_group_ = xEventGroupCreate();
@@ -68,7 +105,7 @@ void Application::Initialize() {
     auto& board = Board::GetInstance();
     SetDeviceState(kDeviceStateStarting);
 
-    if (!LittleFsStorage::GetInstance().Mount()) {
+    if (!MountLittleFs()) {
         ESP_LOGW(TAG, "LittleFS is unavailable; filesystem-dependent services are disabled");
     }
 

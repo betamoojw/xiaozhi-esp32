@@ -82,7 +82,7 @@ class BuildDefaultAssetsTest(unittest.TestCase):
     def test_named_extra_file_keeps_runtime_asset_path(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            source = root / "knxConfig.json"
+            source = root / "configuration.json"
             source.write_text("[]", encoding="utf-8")
             output = root / "assets.bin"
 
@@ -93,7 +93,7 @@ class BuildDefaultAssetsTest(unittest.TestCase):
                 None,
                 None,
                 str(output),
-                named_extra_files=[f"{source}=interfaces/knxConfig.json"],
+                named_extra_files=[f"{source}=interfaces/configuration.json"],
             )
 
             self.assertTrue(ok)
@@ -105,7 +105,7 @@ class BuildDefaultAssetsTest(unittest.TestCase):
                 .decode("utf-8")
                 for index in range(file_count)
             }
-            self.assertIn("interfaces/knxConfig.json", names)
+            self.assertIn("interfaces/configuration.json", names)
 
     def test_wakenet10_copy_keeps_s3_p1_slice(self):
         with tempfile.TemporaryDirectory() as directory:

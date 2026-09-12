@@ -19,13 +19,14 @@ and updates the mutex-protected cache. Socket start, stop, and restart run on
 the `knx_lifecycle` task. MCP reads return cached state and group reads are
 asynchronous, so XiaoZhi's main task never waits for a KNX response.
 
-The communication-object registry is loaded from NVS when a runtime
-configuration exists, otherwise from the read-only factory Assets image.
-Commissioning uses the owner-only `self.knx.import_configuration` MCP tool.
-MCP imports validate and commit the complete registry to NVS before changing
-the active registry. Successful imports are applied immediately and survive
-reboot. The canonical configuration is also synchronized atomically to
-`/littlefs/interfaces/knxConfig.json` for file-based access. FTP commissioning
+The communication-object registry is loaded from
+`/littlefs/interfaces/knxConfig.json`. On the first boot after upgrading from
+the older NVS-backed implementation, an existing NVS registry is validated and
+migrated to LittleFS when the runtime file does not exist. A fresh device
+creates an empty registry. Commissioning uses the owner-only
+`self.knx.import_configuration` MCP tool. MCP imports validate and atomically
+commit the complete registry to LittleFS before changing the active registry.
+Successful imports are applied immediately and survive reboot. FTP commissioning
 uploads to `knxConfig.json.tmp`, then uses the owner-only
 `self.knx.import_configuration_file` tool to validate, persist, publish, and
 activate it.

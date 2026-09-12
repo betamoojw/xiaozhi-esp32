@@ -1,11 +1,10 @@
 #include "knx_config.h"
 
 #ifndef XIAOZHI_KNX_CONFIG_PARSER_ONLY
-#include "assets.h"
-#include "littlefs_storage.h"
 #include "settings.h"
 
 #include <esp_err.h>
+#include <esp_littlefs.h>
 #include <unistd.h>
 #endif
 #include <cJSON.h>
@@ -24,6 +23,9 @@ namespace {
 constexpr size_t kMaximumIdLength = 48;
 constexpr size_t kMaximumNameLength = 80;
 constexpr size_t kMaximumDescriptionLength = 192;
+#ifndef XIAOZHI_KNX_CONFIG_PARSER_ONLY
+constexpr char kLittleFsPartitionLabel[] = "littlefs";
+#endif
 
 bool IsKnownField(const char* name) {
     constexpr const char* kFields[] = {
@@ -80,25 +82,41 @@ bool ValidateObject(const KnxCommunicationObject& object,
 }  // namespace
 
 #ifndef XIAOZHI_KNX_CONFIG_PARSER_ONLY
-bool KnxLoadFactoryConfiguration(std::string& json_text, std::string& error) {
+bool KnxLoadRuntimeConfiguration(std::string& json_text, bool& found, std::string& error) {
     json_text.clear();
+    found = false;
     error.clear();
-    void* data = nullptr;
-    size_t size = 0;
-    if (!Assets::GetInstance().GetAssetData(kKnxFactoryConfigurationAsset, data, size)) {
-        error = std::string("KNX factory configuration asset is unavailable: ") +
-                kKnxFactoryConfigurationAsset;
+    if (!esp_littlefs_mounted(kLittleFsPartitionLabel)) {
+        error = "LittleFS is not mounted";
         return false;
     }
-    if (data == nullptr || size == 0 || size > kKnxMaximumConfigurationLength) {
-        error = "KNX factory configuration asset is empty or exceeds the size limit";
+
+    errno = 0;
+    std::ifstream input(kKnxRuntimeConfigurationPath, std::ios::binary | std::ios::ate);
+    if (!input) {
+        if (errno == ENOENT) {
+            return true;
+        }
+        error = std::string("Could not open KNX runtime configuration: ") + std::strerror(errno);
         return false;
     }
-    json_text.assign(static_cast<const char*>(data), size);
+    const std::streamsize size = input.tellg();
+    if (size <= 0 || static_cast<size_t>(size) > kKnxMaximumConfigurationLength) {
+        error = "KNX runtime configuration is empty or exceeds the size limit";
+        return false;
+    }
+    json_text.resize(static_cast<size_t>(size));
+    input.seekg(0);
+    if (!input.read(json_text.data(), size)) {
+        error = "Could not read the complete KNX runtime configuration";
+        json_text.clear();
+        return false;
+    }
+    found = true;
     return true;
 }
 
-bool KnxLoadPersistedConfiguration(std::string& json_text, bool& found, std::string& error) {
+bool KnxLoadLegacyConfiguration(std::string& json_text, bool& found, std::string& error) {
     json_text.clear();
     found = false;
     error.clear();
@@ -108,34 +126,18 @@ bool KnxLoadPersistedConfiguration(std::string& json_text, bool& found, std::str
         return true;
     }
     if (result != ESP_OK) {
-        error =
-            std::string("Could not load KNX configuration from NVS: ") + esp_err_to_name(result);
+        error = std::string("Could not load legacy KNX configuration from NVS: ") +
+                esp_err_to_name(result);
         return false;
     }
     found = true;
     return true;
 }
 
-bool KnxPersistConfiguration(const std::string& json_text, std::string& error) {
-    error.clear();
-    if (json_text.empty() || json_text.size() > kKnxMaximumConfigurationLength) {
-        error = "KNX configuration is empty or exceeds the size limit";
-        return false;
-    }
-    Settings settings(kKnxSettingsNamespace, true);
-    const esp_err_t result = settings.SetStringAndCommit(kKnxSettingsKey, json_text);
-    if (result != ESP_OK) {
-        error =
-            std::string("Could not persist KNX configuration to NVS: ") + esp_err_to_name(result);
-        return false;
-    }
-    return true;
-}
-
 bool KnxLoadRuntimeConfigurationUpload(std::string& json_text, std::string& error) {
     json_text.clear();
     error.clear();
-    if (!LittleFsStorage::GetInstance().IsMounted()) {
+    if (!esp_littlefs_mounted(kLittleFsPartitionLabel)) {
         error = "LittleFS is not mounted";
         return false;
     }
@@ -162,7 +164,7 @@ bool KnxLoadRuntimeConfigurationUpload(std::string& json_text, std::string& erro
 
 bool KnxWriteRuntimeConfiguration(const std::string& json_text, std::string& error) {
     error.clear();
-    if (!LittleFsStorage::GetInstance().IsMounted()) {
+    if (!esp_littlefs_mounted(kLittleFsPartitionLabel)) {
         error = "LittleFS is not mounted";
         return false;
     }

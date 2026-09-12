@@ -40,11 +40,10 @@ set(SOURCES "audio/audio_codec.cc"
             "settings.cc"
             "device_state_machine.cc"
             "assets.cc"
-            "storage/littlefs_storage.cc"
             "main.cc"
             )
 
-set(INCLUDE_DIRS "." "display" "display/lvgl_display" "display/lvgl_display/jpg" "audio" "audio/demuxer" "protocols" "storage")
+set(INCLUDE_DIRS "." "display" "display/lvgl_display" "display/lvgl_display/jpg" "audio" "audio/demuxer" "protocols")
 
 if(CONFIG_XIAOZHI_KNX_IP)
     list(APPEND SOURCES
@@ -1137,6 +1136,15 @@ if(NOT CMAKE_BUILD_EARLY_EXPANSION)
     target_compile_options(${COMPONENT_LIB} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>)
 endif()
 
+# espp/ftp lazily constructs espp::FileSystem for LIST/DELE/RMD. XiaoZhi owns
+# the LittleFS lifecycle, so make that wrapper adopt the existing mount instead
+# of registering (and potentially formatting) the same partition again.
+if(CONFIG_XIAOZHI_FTP_SERVER AND NOT CMAKE_BUILD_EARLY_EXPANSION)
+    idf_component_get_property(espp_file_system_lib espp__file_system COMPONENT_LIB)
+    target_compile_definitions(${espp_file_system_lib} PRIVATE
+        esp_vfs_littlefs_register=xiaozhi_ftp_adopt_littlefs_mount)
+endif()
+
 # Use target_compile_definitions to define the reported board identity
 # If BOARD_NAME is empty, use BOARD_TYPE
 if(NOT BOARD_NAME)
@@ -1329,14 +1337,6 @@ function(build_default_assets_bin)
     # Add default assets extra files if defined
     if(DEFAULT_ASSETS_EXTRA_FILES)
         list(APPEND BUILD_ARGS "--extra_files" "${DEFAULT_ASSETS_EXTRA_FILES}")
-    endif()
-
-    if(CONFIG_XIAOZHI_KNX_IP)
-        set(KNX_FACTORY_CONFIGURATION
-            "${CMAKE_CURRENT_SOURCE_DIR}/assets/interfaces/knxConfig.json")
-        list(APPEND BUILD_ARGS "--named_extra_file"
-            "${KNX_FACTORY_CONFIGURATION}=interfaces/knxConfig.json")
-        list(APPEND DEFAULT_ASSETS_DEPENDENCIES "${KNX_FACTORY_CONFIGURATION}")
     endif()
 
     list(APPEND BUILD_ARGS "--esp_sr_model_path" "${ESP_SR_MODEL_PATH}")

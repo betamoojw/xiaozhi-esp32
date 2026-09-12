@@ -211,7 +211,7 @@ void RegisterKnxUserOnlyMcpTools(McpServer& server) {
         "self.knx.import_configuration_file",
         "Validates and imports the completed FTP upload at "
         "/littlefs/interfaces/knxConfig.json.tmp. On success the canonical configuration is "
-        "published atomically as knxConfig.json, persisted to NVS, and applied immediately. This "
+        "published atomically as knxConfig.json and applied immediately. This "
         "commissioning tool is visible only to the device owner, not the AI model.",
         PropertyList(), [&manager](const PropertyList&) -> ToolResult {
             size_t object_count = 0;

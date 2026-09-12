@@ -6,16 +6,14 @@
 #include <string>
 #include <vector>
 
-constexpr size_t kKnxMaximumConfigurationLength = 3999;
-constexpr char kKnxFactoryConfigurationAsset[] = "interfaces/knxConfig.json";
+constexpr size_t kKnxMaximumConfigurationLength = 65535;
 constexpr char kKnxRuntimeConfigurationPath[] = "/littlefs/interfaces/knxConfig.json";
 constexpr char kKnxRuntimeConfigurationUploadPath[] = "/littlefs/interfaces/knxConfig.json.tmp";
 constexpr char kKnxSettingsNamespace[] = "knx";
 constexpr char kKnxSettingsKey[] = "config";
 
-bool KnxLoadFactoryConfiguration(std::string& json_text, std::string& error);
-bool KnxLoadPersistedConfiguration(std::string& json_text, bool& found, std::string& error);
-bool KnxPersistConfiguration(const std::string& json_text, std::string& error);
+bool KnxLoadRuntimeConfiguration(std::string& json_text, bool& found, std::string& error);
+bool KnxLoadLegacyConfiguration(std::string& json_text, bool& found, std::string& error);
 bool KnxLoadRuntimeConfigurationUpload(std::string& json_text, std::string& error);
 bool KnxWriteRuntimeConfiguration(const std::string& json_text, std::string& error);
 

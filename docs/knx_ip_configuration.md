@@ -11,7 +11,7 @@ Open `Xiaozhi Assistant -> KNX/IP Configuration` in menuconfig.
 | `CONFIG_XIAOZHI_KNX_IP_MULTICAST_ADDRESS` | `224.0.23.12` | Routing multicast group |
 | `CONFIG_XIAOZHI_KNX_IP_PORT` | `3671` | Routing UDP port |
 | `CONFIG_XIAOZHI_KNX_IP_RECONNECT_INTERVAL_MS` | `10000` | Start/restart retry interval |
-| `CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS` | `32` | Maximum logical objects |
+| `CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS` | `64` | Maximum logical objects |
 | `CONFIG_XIAOZHI_KNX_IP_DEBUG` | off | Log received object values |
 
 The upstream component separately configures callback capacity, packet buffer,
@@ -25,19 +25,24 @@ addresses (`area.line.member`) are accepted. Group ranges are 0..31, 0..7, and
 
 ## Object Registry
 
-The factory/default registry is `main/assets/interfaces/knxConfig.json`. The
-build packages it into the read-only Assets image under the runtime name
-`interfaces/knxConfig.json`; it is not a writable filesystem file.
+The canonical registry is `/littlefs/interfaces/knxConfig.json` in the writable
+LittleFS partition, with a maximum serialized size of 65,535 bytes. At boot, the
+firmware loads and validates that file. If it does not exist, an existing value
+from the legacy NVS namespace `knx`, key `config`, is validated and atomically
+migrated to LittleFS. If neither source exists, the firmware writes and loads
+an empty registry (`[]`). The legacy NVS value is retained as a non-destructive
+rollback copy but is not read while the LittleFS file exists and is not updated
+by new imports.
 
-Runtime configuration is stored in NVS under namespace `knx`, key `config`,
-with a maximum serialized size of 3999 bytes. At boot, a persisted runtime
-configuration takes priority over the factory asset. If neither is available,
-the firmware uses its emergency built-in registry.
+An invalid or unreadable LittleFS registry is never replaced automatically;
+KNX enters the error state and reports the validation or filesystem error. A
+LittleFS mount failure likewise disables KNX configuration loading without
+formatting or erasing the partition.
 
 Provision runtime configuration through the owner-only MCP tool
 `self.knx.import_configuration`. The tool validates the complete candidate,
-persists canonical JSON to NVS, updates the in-memory registry only after the
-commit succeeds, and restarts KNX routing to bind callbacks to the new group
+atomically persists canonical JSON to LittleFS, updates the in-memory registry
+only after the commit succeeds, and restarts KNX routing to bind callbacks to the new group
 addresses. No device reboot is required to apply a successful import.
 
 Each entry requires:
@@ -89,7 +94,7 @@ Do not grant write access merely to make an AI command succeed.
   expected `object_count`.
 5. Call `self.knx.list_objects` and `self.knx.get_status` to verify the active
   registry and routing state.
-6. Reboot the device and list the objects again to verify NVS persistence.
+6. Reboot the device and list the objects again to verify LittleFS persistence.
 
 Example MCP arguments using the test switch command:
 
@@ -122,13 +127,14 @@ them as current. Cache values are not persisted across reboot.
 - `KNX start failed`: inspect bind, multicast membership, IP, and port use.
 - `Invalid KNX communication object configuration`: validate every required
   field, address, DPT, boolean, length, and duplicate.
-- `KNX factory configuration asset is unavailable`: ensure default assets were
-  generated and flashed with `interfaces/knxConfig.json` included.
-- `Could not load KNX configuration from NVS`: inspect NVS initialization and
-  partition health. Invalid persisted JSON is logged and is not silently
-  replaced by the factory registry.
-- `Could not persist KNX configuration to NVS`: inspect NVS capacity and
-  partition health. The active registry is unchanged when persistence fails.
+- `LittleFS is not mounted`: verify the selected partition table contains the
+  `littlefs` partition and inspect the earlier mount error.
+- `Could not open/read KNX runtime configuration`: inspect LittleFS health and
+  file permissions. Invalid or unreadable data is not silently replaced.
+- `Could not load legacy KNX configuration from NVS`: NVS is consulted only
+  when the runtime file is absent; inspect NVS initialization and partition health.
+- `Could not initialize KNX runtime configuration`: migration or empty-registry
+  initialization could not be committed to LittleFS, so KNX remains disabled.
 - Values stay unknown: verify group responses/feedback are routed and use the
   configured address and DPT.
 - Reads do not complete synchronously: this is intentional; request a read and

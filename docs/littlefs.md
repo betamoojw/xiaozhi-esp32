@@ -10,8 +10,7 @@ XiaoZhi uses two independent flash storage mechanisms:
 The `Assets` API and its `assets` partition are unchanged. LittleFS is mounted
 once during application initialization, before network services start. A mount
 failure is logged and disables filesystem-dependent services without formatting
-or erasing the partition. Formatting is available only through the explicit
-`LittleFsStorage::Format()` maintenance API.
+or erasing the partition.
 
 For layouts containing `littlefs`, CMake creates and flashes a separate formatted
 image from `littlefs/`. It seeds only the `interfaces` directory and never
@@ -36,16 +35,18 @@ space required by OTA or existing assets.
 
 ## KNX Configuration
 
-The factory configuration remains the packaged asset
-`interfaces/knxConfig.json`. NVS namespace `knx`, key `config` remains the
-authoritative runtime persistence mechanism. The canonical runtime file is:
+LittleFS is the authoritative KNX persistence mechanism. The canonical runtime
+file is:
 
 ```text
 /littlefs/interfaces/knxConfig.json
 ```
 
-At startup and after direct MCP imports, the selected canonical configuration
-is synchronized to that file using write, flush, `fsync`, close, and rename.
+At startup the file is loaded and validated. If it is absent, a valid registry
+from the legacy NVS namespace `knx`, key `config` is migrated to the file; if
+there is no legacy value, an empty registry is created. Existing NVS data is
+retained for rollback but is no longer updated. Direct MCP imports are written
+using write, flush, `fsync`, close, and rename before being activated.
 To commission through FTP, upload the completed file to:
 
 ```text
@@ -54,8 +55,8 @@ To commission through FTP, upload the completed file to:
 
 Then invoke the owner-only `self.knx.import_configuration_file` MCP tool. It
 reads the complete staging file, applies the existing size and JSON validation,
-atomically publishes canonical `knxConfig.json`, persists the same value to NVS,
-and only then activates the validated registry. Invalid uploads remain inactive.
+atomically publishes canonical `knxConfig.json`, and only then activates the
+validated registry. Invalid uploads remain inactive.
 
 The LittleFS implementation serializes its filesystem internals with its
 FreeRTOS lock. Application-level KNX imports are additionally serialized by

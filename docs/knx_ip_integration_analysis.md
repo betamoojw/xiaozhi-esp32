@@ -39,10 +39,10 @@ and must not be exposed as supported modes.
 - MCP tool-definition pagination is bounded near 8 KB, but tool result payloads
   require their own limits. KNX object listing therefore needs `offset` and
   `limit` parameters with a conservative maximum.
-- `Settings` is a scalar NVS wrapper. A versioned, bounded JSON string in a KNX
-  namespace can hold a modest dynamic object registry without introducing a
-  filesystem dependency. Invalid persisted data must leave KNX disabled while
-  the rest of XiaoZhi continues normally.
+- LittleFS provides the writable KNX registry. The legacy `Settings` NVS value
+  is read only to migrate upgrades whose LittleFS registry does not yet exist.
+  Invalid persisted data must leave KNX disabled while the rest of XiaoZhi
+  continues normally.
 - `main/CMakeLists.txt` owns core source and include registration. Optional KNX
   sources should only be appended when `CONFIG_XIAOZHI_KNX_IP` is enabled.
 - `main/Kconfig.projbuild` is the correct place for user-facing XiaoZhi KNX
@@ -197,10 +197,11 @@ Writes encode outside the lock from a copied object descriptor, send without
 holding the registry mutex, and only update the cache upon a received write or
 response telegram. Failed sends never fabricate state.
 
-Persist a bounded JSON object array in `assets/interfaces/knxConfig.json`. The maximum
-object count is constrained by both Kconfig and the component's
-`ESP_KNX_IP_MAX_GROUP_ADDRESSES`. Missing or invalid configuration leaves KNX
-in its error state without affecting the rest of XiaoZhi. Configuration can be
+Persist a bounded JSON object array in `/littlefs/interfaces/knxConfig.json`.
+The maximum object count is constrained by both Kconfig and the component's
+`ESP_KNX_IP_MAX_GROUP_ADDRESSES`. A missing file is initialized from validated
+legacy NVS data or an empty registry. Invalid configuration leaves KNX in its
+error state without affecting the rest of XiaoZhi. Configuration can be
 provisioned through FTP or the owner-only import tool; both paths use the same
 manager validation rules.
 

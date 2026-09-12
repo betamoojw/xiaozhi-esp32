@@ -115,9 +115,11 @@ TEST_CASE("KNX configuration enforces object limits", "[knx][configuration]") {
     TEST_ASSERT_FALSE(Parse(kValidConfiguration, 1, objects, error));
 }
 
-TEST_CASE("KNX configuration uses the packed factory asset name", "[knx][configuration]") {
-  TEST_ASSERT_EQUAL_STRING("interfaces/knxConfig.json",
-               kKnxFactoryConfigurationAsset);
+TEST_CASE("KNX configuration uses LittleFS runtime paths", "[knx][configuration]") {
+    TEST_ASSERT_EQUAL_STRING("/littlefs/interfaces/knxConfig.json",
+                             kKnxRuntimeConfigurationPath);
+    TEST_ASSERT_EQUAL_STRING("/littlefs/interfaces/knxConfig.json.tmp",
+                             kKnxRuntimeConfigurationUploadPath);
 }
 
 TEST_CASE("KNX configuration accepts an empty registry", "[knx][configuration]") {

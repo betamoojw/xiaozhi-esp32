@@ -1,8 +1,8 @@
 #include "ftp_server.h"
-#include "littlefs_storage.h"
 
 #include <ftp_server.hpp>
 
+#include <esp_littlefs.h>
 #include <esp_log.h>
 
 #include <sys/stat.h>
@@ -12,6 +12,8 @@
 
 namespace {
 constexpr char kTag[] = "FTP_SERVER";
+constexpr char kLittleFsPartitionLabel[] = "littlefs";
+constexpr char kLittleFsMountPoint[] = "/littlefs";
 
 bool IsConfinedRoot(const std::filesystem::path& configured_root,
                     const std::filesystem::path& mount_point) {
@@ -25,6 +27,19 @@ bool IsConfinedRoot(const std::filesystem::path& configured_root,
            *relative.begin() != std::filesystem::path("..");
 }
 }  // namespace
+
+extern "C" esp_err_t xiaozhi_ftp_adopt_littlefs_mount(
+    const esp_vfs_littlefs_conf_t* config) {
+    if (config == nullptr || config->partition_label == nullptr ||
+        std::strcmp(config->partition_label, kLittleFsPartitionLabel) != 0 ||
+        !esp_littlefs_mounted(kLittleFsPartitionLabel)) {
+        ESP_LOGE(kTag, "FTP filesystem wrapper requires the application-owned LittleFS mount");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    ESP_LOGD(kTag, "FTP filesystem wrapper adopted the existing LittleFS mount");
+    return ESP_OK;
+}
 
 FtpServerManager& FtpServerManager::GetInstance() {
     static FtpServerManager instance;
@@ -41,15 +56,14 @@ bool FtpServerManager::OnNetworkConnected(esp_netif_t* netif) {
         return false;
     }
 
-    auto& storage = LittleFsStorage::GetInstance();
-    if (!storage.IsMounted()) {
+    if (!esp_littlefs_mounted(kLittleFsPartitionLabel)) {
         ESP_LOGE(kTag, "Cannot start FTP server because LittleFS is not mounted");
         return false;
     }
     const std::filesystem::path configured_root(CONFIG_XIAOZHI_FTP_SERVER_ROOT);
-    if (!IsConfinedRoot(configured_root, storage.GetMountPoint())) {
+    if (!IsConfinedRoot(configured_root, kLittleFsMountPoint)) {
         ESP_LOGE(kTag, "FTP root %s must be inside %s", CONFIG_XIAOZHI_FTP_SERVER_ROOT,
-                 storage.GetMountPoint());
+                 kLittleFsMountPoint);
         return false;
     }
 
