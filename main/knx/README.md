@@ -4,6 +4,11 @@ This module adapts the managed `esp_knx_ip` component to XiaoZhi. It owns the
 communication-object registry, type-safe DPT conversion, state cache, routing
 lifecycle worker, and MCP adapter.
 
+The adapter supports every codec family exposed by the managed component:
+DPT 1 through 31, 232, 234, and 251. It preserves configured subtype numbers
+and delegates wire validation and conversion to `esp_knx_ip`; DPT 4.001,
+5.001, and 5.003 select the component's ASCII, scaling, and angle helpers.
+
 Dependency direction:
 
 ```text

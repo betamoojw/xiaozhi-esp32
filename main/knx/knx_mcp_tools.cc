@@ -17,8 +17,66 @@ void AddValue(cJSON* json, const KnxValue& value) {
             using Type = std::decay_t<decltype(item)>;
             if constexpr (std::is_same_v<Type, bool>) {
                 cJSON_AddBoolToObject(json, "value", item);
-            } else {
+            } else if constexpr (std::is_same_v<Type, int64_t>) {
+                cJSON_AddStringToObject(json, "value", std::to_string(item).c_str());
+            } else if constexpr (std::is_arithmetic_v<Type>) {
                 cJSON_AddNumberToObject(json, "value", item);
+            } else if constexpr (std::is_same_v<Type, std::string>) {
+                cJSON_AddStringToObject(json, "value", item.c_str());
+            } else {
+                cJSON* object = cJSON_AddObjectToObject(json, "value");
+                if constexpr (std::is_same_v<Type, knx_dpt2_control_t>) {
+                    cJSON_AddBoolToObject(object, "control", item.control);
+                    cJSON_AddBoolToObject(object, "value", item.value);
+                } else if constexpr (std::is_same_v<Type, knx_dpt3_control_t>) {
+                    cJSON_AddBoolToObject(object, "control", item.control);
+                    cJSON_AddNumberToObject(object, "step_code", item.step_code);
+                } else if constexpr (std::is_same_v<Type, knx_dpt10_time_t>) {
+                    cJSON_AddNumberToObject(object, "weekday", item.weekday);
+                    cJSON_AddNumberToObject(object, "hour", item.hour);
+                    cJSON_AddNumberToObject(object, "minute", item.minute);
+                    cJSON_AddNumberToObject(object, "second", item.second);
+                } else if constexpr (std::is_same_v<Type, knx_dpt11_date_t>) {
+                    cJSON_AddNumberToObject(object, "day", item.day);
+                    cJSON_AddNumberToObject(object, "month", item.month);
+                    cJSON_AddNumberToObject(object, "year", item.year);
+                } else if constexpr (std::is_same_v<Type, knx_dpt18_scene_control_t>) {
+                    cJSON_AddBoolToObject(object, "learn", item.learn);
+                    cJSON_AddNumberToObject(object, "scene_number", item.scene_number);
+                } else if constexpr (std::is_same_v<Type, knx_dpt19_datetime_t>) {
+                    cJSON_AddNumberToObject(object, "year", item.year);
+                    cJSON_AddNumberToObject(object, "month", item.month);
+                    cJSON_AddNumberToObject(object, "day", item.day);
+                    cJSON_AddNumberToObject(object, "weekday", item.weekday);
+                    cJSON_AddNumberToObject(object, "hour", item.hour);
+                    cJSON_AddNumberToObject(object, "minute", item.minute);
+                    cJSON_AddNumberToObject(object, "second", item.second);
+                    cJSON_AddBoolToObject(object, "fault", item.fault);
+                    cJSON_AddBoolToObject(object, "working_day", item.working_day);
+                    cJSON_AddBoolToObject(object, "working_day_valid", item.working_day_valid);
+                    cJSON_AddBoolToObject(object, "date_valid", item.date_valid);
+                    cJSON_AddBoolToObject(object, "weekday_valid", item.weekday_valid);
+                    cJSON_AddBoolToObject(object, "time_valid", item.time_valid);
+                    cJSON_AddBoolToObject(object, "daylight_saving_time",
+                                          item.daylight_saving_time);
+                    cJSON_AddBoolToObject(object, "clock_quality", item.clock_quality);
+                } else if constexpr (std::is_same_v<Type, knx_dpt26_scene_info_t>) {
+                    cJSON_AddBoolToObject(object, "active", item.active);
+                    cJSON_AddNumberToObject(object, "scene_number", item.scene_number);
+                } else if constexpr (std::is_same_v<Type, knx_dpt27_combined_status_t>) {
+                    cJSON_AddNumberToObject(object, "value", item.value);
+                    cJSON_AddNumberToObject(object, "mask", item.mask);
+                } else if constexpr (std::is_same_v<Type, knx_dpt232_color_t>) {
+                    cJSON_AddNumberToObject(object, "red", item.red);
+                    cJSON_AddNumberToObject(object, "green", item.green);
+                    cJSON_AddNumberToObject(object, "blue", item.blue);
+                } else if constexpr (std::is_same_v<Type, knx_dpt251_color_t>) {
+                    cJSON_AddNumberToObject(object, "red", item.red);
+                    cJSON_AddNumberToObject(object, "green", item.green);
+                    cJSON_AddNumberToObject(object, "blue", item.blue);
+                    cJSON_AddNumberToObject(object, "white", item.white);
+                    cJSON_AddNumberToObject(object, "valid_channels", item.valid_channels);
+                }
             }
         },
         value);
@@ -32,7 +90,7 @@ cJSON* ObjectToJson(const KnxCommunicationObject& object, bool include_descripti
         cJSON_AddStringToObject(json, "description", object.description.c_str());
     }
     cJSON_AddStringToObject(json, "group_address", object.group_address.c_str());
-    cJSON_AddStringToObject(json, "datapoint_type", KnxDptName(object.datapoint_type));
+    cJSON_AddStringToObject(json, "datapoint_type", KnxDptName(object.datapoint_type).c_str());
     cJSON_AddBoolToObject(json, "readable", object.readable);
     cJSON_AddBoolToObject(json, "writable", object.writable);
     cJSON_AddBoolToObject(json, "valid", object.valid);
@@ -143,8 +201,8 @@ void RegisterKnxMcpTools(McpServer& server) {
     server.AddTool("self.knx.write",
                    "Writes a configured writable KNX group address using its configured datapoint "
                    "type. Use only for control when an object ID is unavailable; prefer "
-                   "self.knx.set_object. Value is a strict string: true/false for DPT-1, decimal "
-                   "integers for DPT-5/7/12/13, or finite decimal numbers for DPT-9/14.",
+                   "self.knx.set_object. Value is a strict DPT-directed string; structured values "
+                   "use the comma-separated field order documented by the KNX MCP reference.",
                    PropertyList({
                        Property("group_address", kPropertyTypeString),
                        Property("value", kPropertyTypeString),

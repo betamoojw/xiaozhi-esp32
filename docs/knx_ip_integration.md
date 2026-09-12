@@ -72,20 +72,16 @@ client, or Wi-Fi station.
 
 ## Supported Datapoints
 
-| Family | Value | Accepted write text |
-| --- | --- | --- |
-| DPT 1.x | Boolean | `true`, `false`, `on`, `off`, `1`, `0` |
-| DPT 5.x | Unsigned 8-bit | `0` through `255` |
-| DPT 7.x | Unsigned 16-bit | `0` through `65535` |
-| DPT 9.x | KNX two-byte float | Finite decimal in component range |
-| DPT 12.x | Unsigned 32-bit | `0` through `4294967295` |
-| DPT 13.x | Signed 32-bit | `-2147483648` through `2147483647` |
-| DPT 14.x | IEEE-754 float | Finite decimal |
+The adapter exposes every codec family in the managed component: DPT 1 through
+31, 232, 234, and 251. Scalar, string, date/time, scene, status, RGB, and RGBW
+values are represented directly with the component's public value types.
+Configured subtype identifiers are preserved. DPT 4.001, 5.001, and 5.003 use
+the component's ASCII, percent-scaling, and angle helpers; other subtype enum,
+unit, reserved-value, and named-bit semantics remain configuration-owned where
+the component documents a family as wire-level.
 
-DPT 5 and 7 are raw values. The manager does not infer percentage scaling,
-units, or subtype ranges. DPT 17 scenes and DPT 20 enums are not implemented by
-the component and are rejected. Other upstream codecs are not exposed until a
-stable MCP value schema is defined.
+See [the MCP reference](knx_ip_mcp.md) for accepted write strings and returned
+JSON shapes.
 
 ## Security and Limitations
 

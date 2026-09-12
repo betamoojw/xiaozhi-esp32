@@ -62,10 +62,29 @@ questions.
 preserve floating-point JSON numbers. Parsing remains type-safe:
 
 - DPT 1: `true`, `false`, `on`, `off`, `1`, or `0`.
-- DPT 5/7/12/13: strict decimal integer in the type range.
-- DPT 9/14: strict finite decimal number in the encoder range.
+- DPT 4.001, 16, 24, 28, and 234: text. DPT 4.001 requires one ASCII
+    character, DPT 16 permits 14 bytes, and DPT 234 requires a lowercase
+    two-letter language code.
+- DPT 5.001 and 5.003, 9, and 14: strict finite decimal numbers. Scaling and
+    angle values are checked by the component codecs.
+- Scalar integer families: strict decimal integers in the component type and
+    codec range.
+- DPT 2: `control,value`.
+- DPT 3: `control,step_code`.
+- DPT 10: `weekday,hour,minute,second`.
+- DPT 11: `day,month,year` (two-digit year).
+- DPT 18 and 26: `learn,scene_number` and `active,scene_number`.
+- DPT 19: `year,month,day,weekday,hour,minute,second,fault,working_day,working_day_valid,date_valid,weekday_valid,time_valid,daylight_saving_time,clock_quality`.
+- DPT 27: `value,mask`.
+- DPT 232: `red,green,blue`.
+- DPT 251: `red,green,blue,white,valid_channels`.
 
-Whitespace, trailing text, unsupported DPTs, overflows, unknown IDs/addresses,
+Booleans inside compound values use the same accepted spellings as DPT 1.
+Cached scalar values are returned as JSON booleans, numbers, or strings;
+compound values are returned as named JSON objects. DPT 29 is returned as a
+decimal string to avoid JSON floating-point precision loss.
+
+Whitespace, trailing text, unknown DPT families, overflows, unknown IDs/addresses,
 and writes to read-only objects are rejected.
 
 ## Natural-Language Flow

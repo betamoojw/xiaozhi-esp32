@@ -40,8 +40,8 @@ constexpr char kValidConfiguration[] = R"json([
 bool Parse(const std::string& json, size_t maximum_objects,
            std::vector<KnxCommunicationObject>& objects, std::string& error) {
     std::string canonical_json;
-    return KnxParseConfiguration(json, maximum_objects, maximum_objects,
-                                 objects, canonical_json, error);
+    return KnxParseConfiguration(json, maximum_objects, maximum_objects, objects, canonical_json,
+                                 error);
 }
 
 }  // namespace
@@ -50,15 +50,17 @@ TEST_CASE("KNX configuration accepts a valid registry", "[knx][configuration]") 
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
     std::string error;
-    TEST_ASSERT_TRUE(KnxParseConfiguration(kValidConfiguration, 8, 8, objects,
-                                           canonical_json, error));
+    TEST_ASSERT_TRUE(
+        KnxParseConfiguration(kValidConfiguration, 8, 8, objects, canonical_json, error));
     TEST_ASSERT_EQUAL(3, objects.size());
     TEST_ASSERT_EQUAL_STRING("test_switch_command", objects[0].id.c_str());
     TEST_ASSERT_FALSE(objects[0].readable);
     TEST_ASSERT_TRUE(objects[0].writable);
     TEST_ASSERT_EQUAL_STRING("test_temperature", objects[2].id.c_str());
-    TEST_ASSERT_EQUAL(static_cast<int>(KnxDpt::kFloat16),
-              static_cast<int>(objects[2].datapoint_type));
+    TEST_ASSERT_EQUAL(9, objects[2].datapoint_type.main);
+    TEST_ASSERT_EQUAL(1, objects[2].datapoint_type.subtype);
+    TEST_ASSERT_TRUE(objects[2].datapoint_type.has_subtype);
+    TEST_ASSERT_EQUAL_STRING("DPT-9.001", KnxDptName(objects[2].datapoint_type).c_str());
     TEST_ASSERT_FALSE(canonical_json.empty());
 }
 
@@ -68,16 +70,18 @@ TEST_CASE("KNX configuration rejects malformed JSON", "[knx][configuration]") {
     TEST_ASSERT_FALSE(Parse("[{", 8, objects, error));
 }
 
-TEST_CASE("KNX configuration rejects unsupported DPT", "[knx][configuration]") {
+TEST_CASE("KNX configuration accepts component DPTs and rejects unknown families",
+          "[knx][configuration]") {
     std::vector<KnxCommunicationObject> objects;
     std::string error;
     std::string json = kValidConfiguration;
     json.replace(json.find("DPT-1.001"), 9, "DPT-17.001");
+    TEST_ASSERT_TRUE(Parse(json, 8, objects, error));
+    json.replace(json.find("DPT-17.001"), 10, "DPT-32.001");
     TEST_ASSERT_FALSE(Parse(json, 8, objects, error));
 }
 
-TEST_CASE("KNX configuration rejects invalid and duplicate addresses",
-          "[knx][configuration]") {
+TEST_CASE("KNX configuration rejects invalid and duplicate addresses", "[knx][configuration]") {
     std::vector<KnxCommunicationObject> objects;
     std::string error;
     std::string invalid = kValidConfiguration;
@@ -94,8 +98,7 @@ TEST_CASE("KNX configuration rejects duplicate IDs and invalid permissions",
     std::vector<KnxCommunicationObject> objects;
     std::string error;
     std::string duplicate = kValidConfiguration;
-    duplicate.replace(duplicate.find("test_switch_status"), 18,
-              "test_switch_command");
+    duplicate.replace(duplicate.find("test_switch_status"), 18, "test_switch_command");
     TEST_ASSERT_FALSE(Parse(duplicate, 8, objects, error));
 
     constexpr char kNoPermissions[] = R"json([{
@@ -116,8 +119,7 @@ TEST_CASE("KNX configuration enforces object limits", "[knx][configuration]") {
 }
 
 TEST_CASE("KNX configuration uses LittleFS runtime paths", "[knx][configuration]") {
-    TEST_ASSERT_EQUAL_STRING("/littlefs/interfaces/knxConfig.json",
-                             kKnxRuntimeConfigurationPath);
+    TEST_ASSERT_EQUAL_STRING("/littlefs/interfaces/knxConfig.json", kKnxRuntimeConfigurationPath);
     TEST_ASSERT_EQUAL_STRING("/littlefs/interfaces/knxConfig.json.tmp",
                              kKnxRuntimeConfigurationUploadPath);
 }
@@ -126,8 +128,7 @@ TEST_CASE("KNX configuration accepts an empty registry", "[knx][configuration]")
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
     std::string error;
-    TEST_ASSERT_TRUE(KnxParseConfiguration("[]", 8, 8, objects,
-                                           canonical_json, error));
+    TEST_ASSERT_TRUE(KnxParseConfiguration("[]", 8, 8, objects, canonical_json, error));
     TEST_ASSERT_TRUE(objects.empty());
     TEST_ASSERT_EQUAL_STRING("[]", canonical_json.c_str());
 }

@@ -355,8 +355,9 @@ void KnxManager::HandleTelegram(const knx_telegram_t& telegram) {
             object.last_update_ms = timestamp;
             last_communication_ms_ = timestamp;
 #if CONFIG_XIAOZHI_KNX_IP_DEBUG
-            ESP_LOGI(kTag, "Received %s %s=%s", object.group_address.c_str(),
-                     KnxDptName(object.datapoint_type), KnxValueToString(value).c_str());
+            const std::string dpt_name = KnxDptName(object.datapoint_type);
+            ESP_LOGI(kTag, "Received %s %s=%s", object.group_address.c_str(), dpt_name.c_str(),
+                     KnxValueToString(value).c_str());
 #endif
         } else {
             last_error_ = "Could not decode KNX value for " + object.id;

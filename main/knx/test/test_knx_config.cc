@@ -37,35 +37,38 @@ constexpr char kValidConfiguration[] = R"json([
     }
 ])json";
 
-bool Parse(const std::string& json, size_t maximum_objects = 8,
-           size_t maximum_addresses = 8) {
+bool Parse(const std::string& json, size_t maximum_objects = 8, size_t maximum_addresses = 8) {
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
     std::string error;
-    return KnxParseConfiguration(json, maximum_objects, maximum_addresses,
-                                 objects, canonical_json, error);
+    return KnxParseConfiguration(json, maximum_objects, maximum_addresses, objects, canonical_json,
+                                 error);
 }
 
 void TestValidConfiguration() {
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
     std::string error;
-    assert(KnxParseConfiguration(kValidConfiguration, 8, 8, objects,
-                                 canonical_json, error));
+    assert(KnxParseConfiguration(kValidConfiguration, 8, 8, objects, canonical_json, error));
     assert(objects.size() == 3);
     assert(objects[0].id == "test_switch_command");
     assert(!objects[0].readable && objects[0].writable);
     assert(objects[1].readable && !objects[1].writable);
     assert(objects[2].id == "test_temperature");
-    assert(objects[2].datapoint_type == KnxDpt::kFloat16);
+    assert((objects[2].datapoint_type == KnxDpt{9, 1, true}));
+    assert(KnxDptName(objects[2].datapoint_type) == "DPT-9.001");
     assert(!canonical_json.empty());
 }
 
 void TestMalformedAndUnsupportedValues() {
     assert(!Parse("[{"));
     std::string unsupported = kValidConfiguration;
-    unsupported.replace(unsupported.find("DPT-1.001"), 9, "DPT-17.001");
+    unsupported.replace(unsupported.find("DPT-1.001"), 9, "DPT-32.001");
     assert(!Parse(unsupported));
+
+    std::string newly_supported = kValidConfiguration;
+    newly_supported.replace(newly_supported.find("DPT-1.001"), 9, "DPT-17.001");
+    assert(Parse(newly_supported));
 }
 
 void TestAddressesAndIds() {
@@ -78,8 +81,7 @@ void TestAddressesAndIds() {
     assert(!Parse(duplicate_address));
 
     std::string duplicate_id = kValidConfiguration;
-    duplicate_id.replace(duplicate_id.find("test_switch_status"), 18,
-                         "test_switch_command");
+    duplicate_id.replace(duplicate_id.find("test_switch_status"), 18, "test_switch_command");
     assert(!Parse(duplicate_id));
 }
 

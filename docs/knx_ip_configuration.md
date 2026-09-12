@@ -69,14 +69,21 @@ Rules:
 - `description` is optional and at most 192 bytes.
 - `group_address` must use exact three-level syntax.
 - `datapoint_type` accepts a supported family with an optional subtype. The
-  family controls encoding; subtype metadata is retained only in deployment
-  documentation in this version.
+  exact subtype is retained. DPT 4.001 uses ASCII conversion, DPT 5.001 uses
+  percent scaling, and DPT 5.003 uses angle conversion; other subtypes use the
+  codec for their main family.
 - `readable` and `writable` must be JSON booleans.
 - At least one of `readable` or `writable` must be true.
 - Object IDs and group addresses must both be unique.
 - Unknown or duplicate JSON fields are rejected.
 - Invalid JSON rejects the complete registry. KNX reports an error while the
   previous registry and persisted configuration remain unchanged.
+
+Supported main families match the managed component exactly: DPT 1 through
+DPT 31, DPT 232 (RGB), DPT 234 (language), and DPT 251 (RGBW). The component
+does not provide a subtype catalogue, so configuration validates the family
+and preserves the subtype rather than claiming semantic validation of every
+KNX subtype number.
 
 Use separate status and command objects when the KNX installation has separate
 feedback and actuator group addresses. Mark sensor/status objects non-writable.

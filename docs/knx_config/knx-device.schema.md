@@ -160,21 +160,22 @@ String, maximum 2000 characters. It is required in the base schema to keep the o
 
 String in three-level notation:
 
-`main.middle.subgroup`
+`main/middle/subgroup`
 
 Ranges:
 
 - main: 0–31
-- middle: 0–31
+- middle: 0–7
 - subgroup: 0–255
 
 Examples:
 
-- `1.0.1`
-- `2.1.10`
-- `31.31.255`
+- `1/0/1`
+- `2/1/10`
+- `31/7/255`
 
-This schema intentionally standardizes the textual three-level representation rather than accepting slash notation as a second canonical form.
+This schema uses the same slash-separated three-level representation as the
+runtime communication-object registry.
 
 ### `datapoint_type`
 
@@ -192,9 +193,10 @@ Examples:
 
 The schema validates the syntax:
 
-`^DPT-[0-9]{1,2}\.[0-9]{3}$`
+`^DPT-(?:(?:[1-9]|[12][0-9]|3[01])|232|234|251)\.[0-9]{3}$`
 
-The syntax check does not attempt to contain the complete KNX DPT registry. Consequently, a syntactically valid but unsupported DPT number can pass JSON Schema validation.
+The schema accepts every DPT main family implemented by the managed component:
+1 through 31, 232, 234, and 251.
 
 Applications that require a closed DPT catalogue should validate the identifier against their KNX DPT catalogue as a second semantic-validation step.
 
@@ -209,8 +211,8 @@ Applications that require a closed DPT catalogue should validate the identifier 
 | `id` | string | 1–128 chars; restricted identifier pattern. |
 | `name` | string | 1–256 chars. |
 | `description` | string | max 2000 chars. |
-| `group_address` | string | `main.middle.subgroup`, ranges 0–31/0–31/0–255. |
-| `datapoint_type` | string | `DPT-[0-9]{1,2}.[0-9]{3}`. |
+| `group_address` | string | `main/middle/subgroup`, ranges 0–31/0–7/0–255. |
+| `datapoint_type` | string | Supported family plus a three-digit subtype. |
 | `readable` | boolean | JSON boolean only. |
 | `writable` | boolean | JSON boolean only. |
 | `current_value` | null/bool/number/string/array/object | Flexible JSON representation. |
@@ -221,15 +223,15 @@ Applications that require a closed DPT catalogue should validate the identifier 
 
 The canonical representation is:
 
-`main.middle.subgroup`
+`main/middle/subgroup`
 
 The schema uses:
 
 - main = 0–31
-- middle = 0–31
+- middle = 0–7
 - subgroup = 0–255
 
-For example, `2.1.10` represents main group 2, middle group 1, subgroup 10.
+For example, `2/1/10` represents main group 2, middle group 1, subgroup 10.
 
 If an implementation needs two-level group addresses, it should normalize them into the canonical three-level form before storing them in this schema.
 

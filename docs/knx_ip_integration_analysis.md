@@ -67,7 +67,7 @@ Public API:
 - Transmission: `esp_knx_ip_send` and `esp_knx_ip_send_unicast`.
 - Address helpers: `knx_group_address`, `knx_physical_address`, and component
   extraction helpers.
-- DPT codecs: DPT 1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, and 232.
+- DPT codecs: DPT 1 through 31, 232, 234, and 251.
 
 The component owns one UDP socket, mutex, event group, fixed callback table,
 and FreeRTOS receive task per handle. It binds UDP port 3671, joins multicast
@@ -95,22 +95,13 @@ data bits after the parser removes APCI command bits. DPT 1 uses that first byte
 Multi-byte DPT payloads begin at `telegram.data + 1`; sends must prepend a zero
 APDU byte before the encoded DPT bytes.
 
-The XiaoZhi type layer will initially support only codecs present upstream:
-
-| DPT family | XiaoZhi value type | Notes |
-| --- | --- | --- |
-| DPT 1.x | `bool` | One-bit boolean |
-| DPT 5.x | `uint8_t` | Raw 0..255; subtype scaling is not inferred |
-| DPT 7.x | `uint16_t` | Raw unsigned value; units depend on configured subtype |
-| DPT 9.x | `float` | KNX two-byte float; finite upstream encoder range |
-| DPT 12.x | `uint32_t` | Four-byte unsigned integer |
-| DPT 13.x | `int32_t` | Four-byte signed integer |
-| DPT 14.x | `float` | Four-byte IEEE-754 float; finite values only |
-
-DPT 17.x scenes and DPT 20.x enums are required for evaluation but have no
-upstream codecs and will remain explicitly unsupported. DPT 6, 8, 10, 11, 16,
-and 232 exist upstream but are outside the initial MCP model and will not be
-advertised until their value schemas and subtype validation are designed.
+The synchronized XiaoZhi type layer exposes all component codec families. It
+uses scalar and string alternatives plus the component's public structures for
+DPT 2, 3, 10, 11, 18, 19, 26, 27, 232, and 251. DPT 29 is represented as a
+signed 64-bit integer. Exact subtype text is retained; DPT 4.001, 5.001, and
+5.003 select the component's specialized helpers. The component intentionally
+has no subtype registry, so enum and named-bit semantics for wire-level
+families remain application configuration concerns.
 
 ## API and ESP-IDF Compatibility
 
