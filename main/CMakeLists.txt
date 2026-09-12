@@ -1141,6 +1141,33 @@ endif()
 # of registering (and potentially formatting) the same partition again.
 if(CONFIG_XIAOZHI_FTP_SERVER AND NOT CMAKE_BUILD_EARLY_EXPANSION)
     idf_component_get_property(espp_file_system_lib espp__file_system COMPONENT_LIB)
+    idf_component_get_property(espp_file_system_dir espp__file_system COMPONENT_DIR)
+
+    set(espp_file_system_source "${espp_file_system_dir}/src/file_system.cpp")
+    file(READ "${espp_file_system_source}" espp_file_system_contents)
+    set(espp_directory_size_bug "result += fmt::format(\"{:>8} \", \"\");")
+    string(FIND "${espp_file_system_contents}" "${espp_directory_size_bug}"
+           espp_directory_size_bug_offset)
+    if(espp_directory_size_bug_offset EQUAL -1)
+        message(FATAL_ERROR "espp/file_system changed; update the FTP LIST compatibility patch")
+    endif()
+    string(REPLACE "${espp_directory_size_bug}"
+                   "result += fmt::format(\"{:>8} \", 0);"
+                   espp_file_system_contents "${espp_file_system_contents}")
+    set(espp_file_system_patched_source
+        "${CMAKE_CURRENT_BINARY_DIR}/espp_file_system_xiaozhi.cpp")
+    file(WRITE "${espp_file_system_patched_source}" "${espp_file_system_contents}")
+
+    get_target_property(espp_file_system_sources ${espp_file_system_lib} SOURCES)
+    list(FIND espp_file_system_sources "${espp_file_system_source}"
+         espp_file_system_source_index)
+    if(espp_file_system_source_index EQUAL -1)
+        message(FATAL_ERROR "Could not replace the espp/file_system source for FTP LIST")
+    endif()
+    list(REMOVE_ITEM espp_file_system_sources "${espp_file_system_source}")
+    list(APPEND espp_file_system_sources "${espp_file_system_patched_source}")
+    set_property(TARGET ${espp_file_system_lib} PROPERTY SOURCES ${espp_file_system_sources})
+
     target_compile_definitions(${espp_file_system_lib} PRIVATE
         esp_vfs_littlefs_register=xiaozhi_ftp_adopt_littlefs_mount)
 endif()
