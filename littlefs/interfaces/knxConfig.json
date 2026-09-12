@@ -1,127 +1,127 @@
 [
     {
-        "id": "test_switch_command",
-        "name": "Test Switch Command",
+        "id": "living_room_light_switch_command",
+        "name": "Living Room Light Switch Command",
         "group_address": "1/0/1",
         "datapoint_type": "DPT-1.001",
         "readable": false,
         "writable": true
     },
     {
-        "id": "test_switch_status",
-        "name": "Test Switch Status",
+        "id": "living_room_light_switch_status",
+        "name": "Living Room Light Switch Status",
         "group_address": "1/0/2",
         "datapoint_type": "DPT-1.001",
         "readable": true,
         "writable": false
     },
     {
-        "id": "test_temperature",
-        "name": "Test Temperature",
+        "id": "living_room_temperature",
+        "name": "Living Room Temperature",
         "group_address": "2/0/1",
         "datapoint_type": "DPT-9.001",
         "readable": true,
         "writable": false
     },
     {
-        "id": "test_switch_command_2",
-        "name": "Test Switch Command 2",
+        "id": "dining_room_light_switch_command",
+        "name": "Dining Room Light Switch Command",
         "group_address": "1/0/3",
         "datapoint_type": "DPT-1.001",
         "readable": true,
         "writable": true
     },
     {
-        "id": "test_percentage",
-        "name": "Test Percentage",
+        "id": "living_room_blinds_position_percentage",
+        "name": "Living Room Blinds Position Percentage",
         "group_address": "3/0/1",
         "datapoint_type": "DPT-5.001",
         "readable": true,
         "writable": true
     },
     {
-        "id": "test_angle",
-        "name": "Test Angle",
+        "id": "living_room_blinds_position_angle",
+        "name": "Living Room Blinds Position Angle",
         "group_address": "3/0/2",
         "datapoint_type": "DPT-5.003",
         "readable": true,
         "writable": true
     },
     {
-        "id": "test_counter",
-        "name": "Test Counter",
+        "id": "living_room_blinds_position_counter",
+        "name": "Living Room Blinds Position Counter",
         "group_address": "3/0/3",
         "datapoint_type": "DPT-5.010",
         "readable": true,
         "writable": true
     },
     {
-        "id": "test_temperature_celsius",
-        "name": "Test Temperature Celsius",
+        "id": "bedroom_temperature_celsius",
+        "name": "Bedroom Temperature Celsius",
         "group_address": "2/0/2",
         "datapoint_type": "DPT-9.001",
         "readable": true,
         "writable": false
     },
     {
-        "id": "test_humidity",
-        "name": "Test Relative Humidity",
+        "id": "living_room_relative_humidity",
+        "name": "Living Room Relative Humidity",
         "group_address": "2/0/3",
         "datapoint_type": "DPT-9.007",
         "readable": true,
         "writable": false
     },
     {
-        "id": "test_illuminance",
-        "name": "Test Illuminance",
+        "id": "entrance_illuminance",
+        "name": "Entrance Illuminance",
         "group_address": "2/0/4",
         "datapoint_type": "DPT-9.004",
         "readable": true,
         "writable": false
     },
     {
-        "id": "test_wind_speed",
-        "name": "Test Wind Speed",
+        "id": "terrace_wind_speed",
+        "name": "Terrace Wind Speed",
         "group_address": "2/0/5",
         "datapoint_type": "DPT-9.005",
         "readable": true,
         "writable": false
     },
     {
-        "id": "test_pressure",
-        "name": "Test Pressure",
+        "id": "terrace_air_pressure",
+        "name": "Terrace Air Pressure",
         "group_address": "2/0/6",
         "datapoint_type": "DPT-9.006",
         "readable": true,
         "writable": false
     },
     {
-        "id": "test_uint16",
-        "name": "Test Unsigned 16 Bit",
+        "id": "hall_energy_counter",
+        "name": "Hall Energy Counter",
         "group_address": "6/0/1",
         "datapoint_type": "DPT-7.001",
         "readable": true,
         "writable": true
     },
     {
-        "id": "test_uint32",
-        "name": "Test Unsigned 32 Bit",
+        "id": "utility_room_total_runtime",
+        "name": "Utility Room Total Runtime",
         "group_address": "7/0/1",
         "datapoint_type": "DPT-12.001",
         "readable": true,
         "writable": true
     },
     {
-        "id": "test_int32",
-        "name": "Test Signed 32 Bit",
+        "id": "boiler_return_temperature",
+        "name": "Boiler Return Temperature",
         "group_address": "7/0/2",
         "datapoint_type": "DPT-13.001",
         "readable": true,
         "writable": true
     },
     {
-        "id": "test_float32",
-        "name": "Test IEEE Float",
+        "id": "roof_temperature_float",
+        "name": "Roof Temperature Float",
         "group_address": "7/0/3",
         "datapoint_type": "DPT-14.056",
         "readable": true,
