@@ -301,5 +301,113 @@
         "datapoint_type": "DPT-1.001",
         "readable": true,
         "writable": true
+    },
+    {
+        "id": "house_scene_select",
+        "name": "House Scene Select",
+        "description": "Select the active house scene preset",
+        "group_address": "8/0/1",
+        "datapoint_type": "DPT-3.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "house_scene_name",
+        "name": "House Scene Name",
+        "description": "Text label for the current scene",
+        "group_address": "8/0/2",
+        "datapoint_type": "DPT-4.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "house_airflow_setpoint",
+        "name": "House Airflow Setpoint",
+        "description": "Target airflow percentage for the house ventilation system",
+        "group_address": "8/0/3",
+        "datapoint_type": "DPT-6.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "energy_tariff",
+        "name": "Energy Tariff",
+        "description": "Current tariff level for the building electricity rate",
+        "group_address": "8/0/4",
+        "datapoint_type": "DPT-7.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "alarm_count",
+        "name": "Alarm Count",
+        "description": "Counter for triggered alarm events",
+        "group_address": "8/0/5",
+        "datapoint_type": "DPT-8.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "water_total",
+        "name": "Water Total",
+        "description": "Accumulated water consumption value",
+        "group_address": "8/0/6",
+        "datapoint_type": "DPT-11.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "sound_level",
+        "name": "Sound Level",
+        "description": "Current acoustic sound pressure level",
+        "group_address": "8/0/7",
+        "datapoint_type": "DPT-13.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "battery_state",
+        "name": "Battery State",
+        "description": "Battery charge and health state",
+        "group_address": "8/0/8",
+        "datapoint_type": "DPT-19.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "rain_detected",
+        "name": "Rain Detected",
+        "description": "Rain sensor detection state",
+        "group_address": "8/0/9",
+        "datapoint_type": "DPT-22.101",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "distance_value",
+        "name": "Distance Value",
+        "description": "Measured distance or position value",
+        "group_address": "8/0/10",
+        "datapoint_type": "DPT-23.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "color_saturation",
+        "name": "Color Saturation",
+        "description": "Color saturation level of the light scene",
+        "group_address": "8/0/11",
+        "datapoint_type": "DPT-24.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "humidity_value",
+        "name": "Humidity Value",
+        "description": "Measured humidity percentage",
+        "group_address": "8/0/12",
+        "datapoint_type": "DPT-27.001",
+        "readable": true,
+        "writable": false
     }
 ]
