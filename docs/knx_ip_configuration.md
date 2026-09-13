@@ -11,7 +11,7 @@ Open `Xiaozhi Assistant -> KNX/IP Configuration` in menuconfig.
 | `CONFIG_XIAOZHI_KNX_IP_MULTICAST_ADDRESS` | `224.0.23.12` | Routing multicast group |
 | `CONFIG_XIAOZHI_KNX_IP_PORT` | `3671` | Routing UDP port |
 | `CONFIG_XIAOZHI_KNX_IP_RECONNECT_INTERVAL_MS` | `10000` | Start/restart retry interval |
-| `CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS` | `64` | Maximum logical objects |
+| `CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS` | `128` | Maximum logical objects |
 | `CONFIG_XIAOZHI_KNX_IP_DEBUG` | off | Log received object values |
 
 The upstream component separately configures callback capacity, packet buffer,

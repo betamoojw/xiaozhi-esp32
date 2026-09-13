@@ -1047,7 +1047,7 @@ menu "KNX/IP Configuration"
     config XIAOZHI_KNX_IP_MAX_OBJECTS
         int "Maximum configured communication objects"
         range 1 128
-        default 64
+        default 128
         depends on XIAOZHI_KNX_IP
 
     config XIAOZHI_KNX_IP_DEBUG
