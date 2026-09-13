@@ -53,7 +53,6 @@
         "readable": true,
         "writable": false
     },
-
     {
         "id": "living_room_dimming_command",
         "name": "Living Room Dimming Level",
@@ -90,7 +89,6 @@
         "readable": true,
         "writable": false
     },
-
     {
         "id": "living_room_curtain_command",
         "name": "Living Room Curtain Up Down",
@@ -127,7 +125,6 @@
         "readable": true,
         "writable": true
     },
-
     {
         "id": "living_room_ac_power",
         "name": "Living Room AC Power",
@@ -182,7 +179,6 @@
         "readable": true,
         "writable": true
     },
-
     {
         "id": "ventilation_power",
         "name": "Ventilation System Power",
@@ -219,7 +215,6 @@
         "readable": true,
         "writable": false
     },
-
     {
         "id": "floor_heating_power",
         "name": "Floor Heating Main Power",
@@ -265,7 +260,6 @@
         "readable": true,
         "writable": false
     },
-
     {
         "id": "all_lights_off",
         "name": "All Lights Off",
@@ -409,5 +403,284 @@
         "datapoint_type": "DPT-27.001",
         "readable": true,
         "writable": false
+    },
+    {
+        "id": "general_enable",
+        "name": "General Enable",
+        "description": "Enable/disable a function",
+        "group_address": "9/0/1",
+        "datapoint_type": "DPT-1.003",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "general_alarm",
+        "name": "General Alarm",
+        "description": "General alarm indication",
+        "group_address": "9/0/2",
+        "datapoint_type": "DPT-1.005",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "general_start_stop",
+        "name": "General Start Stop",
+        "description": "Start/stop command",
+        "group_address": "9/0/3",
+        "datapoint_type": "DPT-1.010",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "dimming_relative",
+        "name": "Relative Dimming Command",
+        "description": "Relative dimming step/control",
+        "group_address": "9/0/4",
+        "datapoint_type": "DPT-3.007",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "blind_relative",
+        "name": "Relative Blind Control",
+        "description": "Relative blind/shutter movement control",
+        "group_address": "9/0/5",
+        "datapoint_type": "DPT-3.008",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "light_brightness",
+        "name": "Light Brightness",
+        "description": "Light brightness percentage",
+        "group_address": "9/0/6",
+        "datapoint_type": "DPT-5.004",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "light_angle",
+        "name": "Light Angle",
+        "description": "Light angle in degrees",
+        "group_address": "9/0/7",
+        "datapoint_type": "DPT-5.003",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "fan_speed",
+        "name": "Fan Speed",
+        "description": "Fan speed percentage",
+        "group_address": "9/0/8",
+        "datapoint_type": "DPT-5.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "signed_count",
+        "name": "Signed Count",
+        "description": "Signed 16-bit counter value",
+        "group_address": "9/0/9",
+        "datapoint_type": "DPT-8.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "temperature_difference",
+        "name": "Temperature Difference",
+        "description": "Temperature difference value",
+        "group_address": "9/0/10",
+        "datapoint_type": "DPT-9.002",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "illuminance",
+        "name": "Illuminance",
+        "description": "Illuminance in lux",
+        "group_address": "9/0/11",
+        "datapoint_type": "DPT-9.004",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "wind_speed",
+        "name": "Wind Speed",
+        "description": "Wind speed measurement",
+        "group_address": "9/0/12",
+        "datapoint_type": "DPT-9.005",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "pressure",
+        "name": "Air Pressure",
+        "description": "Air pressure measurement",
+        "group_address": "9/0/13",
+        "datapoint_type": "DPT-9.006",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "air_quality",
+        "name": "Air Quality",
+        "description": "Air quality measurement",
+        "group_address": "9/0/14",
+        "datapoint_type": "DPT-9.008",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "ppm_value",
+        "name": "PPM Value",
+        "description": "Concentration in ppm",
+        "group_address": "9/0/15",
+        "datapoint_type": "DPT-9.008",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "time_of_day",
+        "name": "Time of Day",
+        "description": "KNX time-of-day value",
+        "group_address": "9/0/16",
+        "datapoint_type": "DPT-10.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "date_value",
+        "name": "Date",
+        "description": "KNX date value",
+        "group_address": "9/0/17",
+        "datapoint_type": "DPT-11.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "unsigned_counter",
+        "name": "Unsigned Counter",
+        "description": "Unsigned 32-bit counter",
+        "group_address": "9/0/18",
+        "datapoint_type": "DPT-12.001",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "energy_kwh",
+        "name": "Energy Consumption",
+        "description": "Accumulated active energy in kWh",
+        "group_address": "9/0/19",
+        "datapoint_type": "DPT-13.013",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "power_w",
+        "name": "Power",
+        "description": "Power value in watts",
+        "group_address": "9/0/20",
+        "datapoint_type": "DPT-13.010",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "float_illuminance",
+        "name": "IEEE Float Illuminance",
+        "description": "32-bit floating-point illuminance",
+        "group_address": "9/0/21",
+        "datapoint_type": "DPT-14.056",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "scene_number",
+        "name": "Scene Number",
+        "description": "Scene number selection",
+        "group_address": "9/0/22",
+        "datapoint_type": "DPT-17.001",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "scene_control",
+        "name": "Scene Control",
+        "description": "Scene activation/control",
+        "group_address": "9/0/23",
+        "datapoint_type": "DPT-18.001",
+        "readable": false,
+        "writable": true
+    },
+    {
+        "id": "hvac_mode",
+        "name": "HVAC Mode",
+        "description": "HVAC operating mode",
+        "group_address": "9/0/24",
+        "datapoint_type": "DPT-20.102",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "hvac_controller_mode",
+        "name": "HVAC Controller Mode",
+        "description": "HVAC controller operating mode",
+        "group_address": "9/0/25",
+        "datapoint_type": "DPT-20.105",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "occupancy_status",
+        "name": "Occupancy Status",
+        "description": "Occupancy/presence status",
+        "group_address": "9/0/26",
+        "datapoint_type": "DPT-1.018",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "window_door_status",
+        "name": "Window Door Status",
+        "description": "Window/door open status",
+        "group_address": "9/0/27",
+        "datapoint_type": "DPT-1.019",
+        "readable": true,
+        "writable": false
+    },
+    {
+        "id": "color_temperature",
+        "name": "Color Temperature",
+        "description": "Color temperature value",
+        "group_address": "9/0/28",
+        "datapoint_type": "DPT-7.600",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "time_period_seconds",
+        "name": "Time Period Seconds",
+        "description": "Time period in seconds",
+        "group_address": "9/0/29",
+        "datapoint_type": "DPT-7.005",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "time_period_minutes",
+        "name": "Time Period Minutes",
+        "description": "Time period in minutes",
+        "group_address": "9/0/30",
+        "datapoint_type": "DPT-7.006",
+        "readable": true,
+        "writable": true
+    },
+    {
+        "id": "string_latin1",
+        "name": "Text String",
+        "description": "14-byte ISO-8859-1 text string",
+        "group_address": "9/0/31",
+        "datapoint_type": "DPT-16.001",
+        "readable": true,
+        "writable": true
     }
 ]
