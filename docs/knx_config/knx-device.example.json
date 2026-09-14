@@ -1,13 +1,13 @@
 {
   "media_type": "knx_ip",
   "media_parameters": {
-    "ip_address": "192.168.10.25",
-    "port": 3671,
+    "multicast_address": "224.0.23.12",
+    "udp_port": 3671,
     "transport_mode": "routing",
-    "interface_identifier": "KNX-IP-Interface-1",
+    "interface_identifier": "KNX-IP-Interface",
     "nat": false
   },
-  "physical_address": "1.2.15",
+  "physical_address": "15.15.199",
   "communication_objects": [
     {
       "id": "switch_living_room",
