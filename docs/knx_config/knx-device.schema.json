@@ -331,6 +331,14 @@
         },
         "last_update_timestamp": {
           "$ref": "#/$defs/timestamp"
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Optional unit of measurement for the communication object value (e.g., '°C', '%', 'dB', 'kWh'). Null if the object has no unit.",
+          "maxLength": 32
         }
       },
       "additionalProperties": true

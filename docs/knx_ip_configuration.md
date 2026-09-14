@@ -9,7 +9,7 @@ Open `Xiaozhi Assistant -> KNX/IP Configuration` in menuconfig.
 | `CONFIG_XIAOZHI_KNX_IP` | off | Compile and enable the adapter |
 | `CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS` | `15.15.199` | KNX individual source address |
 | `CONFIG_XIAOZHI_KNX_IP_MULTICAST_ADDRESS` | `224.0.23.12` | Routing multicast group |
-| `CONFIG_XIAOZHI_KNX_IP_PORT` | `3671` | Routing UDP port |
+| `CONFIG_XIAOZHI_KNX_IP_UDP_PORT` | `3671` | Routing UDP port |
 | `CONFIG_XIAOZHI_KNX_IP_RECONNECT_INTERVAL_MS` | `10000` | Start/restart retry interval |
 | `CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS` | `128` | Maximum logical objects |
 | `CONFIG_XIAOZHI_KNX_IP_DEBUG` | off | Log received object values |
@@ -45,35 +45,78 @@ atomically persists canonical JSON to LittleFS, updates the in-memory registry
 only after the commit succeeds, and restarts KNX routing to bind callbacks to the new group
 addresses. No device reboot is required to apply a successful import.
 
-Each entry requires:
+### Configuration Format
+
+The configuration file supports two formats:
+
+#### New Format (Recommended)
+
+The new format is an object with media parameters, physical address, and communication objects:
 
 ```json
 {
-  "id": "site_unique_id",
-  "name": "Human-readable semantic name",
-  "description": "Optional concise location and function",
-  "group_address": "1/2/3",
-  "datapoint_type": "DPT-1.001",
-  "readable": true,
-  "writable": false
+  "media_type": "knx_ip",
+  "media_parameters": {
+    "multicast_address": "224.0.23.12",
+    "udp_port": 3671,
+    "transport_mode": "routing",
+    "interface_identifier": "KNX-IP-Interface",
+    "nat": false
+  },
+  "physical_address": "15.15.199",
+  "communication_objects": [
+    {
+      "id": "site_unique_id",
+      "name": "Human-readable semantic name",
+      "description": "Optional concise location and function",
+      "group_address": "1/2/3",
+      "datapoint_type": "DPT-1.001",
+      "readable": true,
+      "writable": false,
+      "unit": null
+    }
+  ]
 }
 ```
 
-This is a schema example, not a built-in object. The firmware contains no
-site-specific group addresses.
+#### Legacy Format (Deprecated)
+
+The legacy array format is still supported for backward compatibility:
+
+```json
+[
+  {
+    "id": "site_unique_id",
+    "name": "Human-readable semantic name",
+    "description": "Optional concise location and function",
+    "group_address": "1/2/3",
+    "datapoint_type": "DPT-1.001",
+    "readable": true,
+    "writable": false
+  }
+]
+```
+
+### Object Schema
+
+Each communication object requires:
+
+- `id`: required, unique, at most 48 bytes
+- `name`: required, at most 80 bytes
+- `description`: optional, at most 192 bytes
+- `group_address`: required, must use exact three-level syntax
+- `datapoint_type`: required, accepts a supported family with optional subtype
+- `readable`: required boolean; must be true if object receives values from KNX bus
+- `writable`: required boolean; must be true if object sends values to KNX bus
+- `unit`: optional string; unit of measurement (e.g., "°C", "%", "dB", etc.)
+
+At least one of `readable` or `writable` must be true.
 
 Rules:
 
-- `id` is required, unique, and at most 48 bytes.
-- `name` is required and at most 80 bytes.
-- `description` is optional and at most 192 bytes.
-- `group_address` must use exact three-level syntax.
-- `datapoint_type` accepts a supported family with an optional subtype. The
-  exact subtype is retained. DPT 4.001 uses ASCII conversion, DPT 5.001 uses
-  percent scaling, and DPT 5.003 uses angle conversion; other subtypes use the
-  codec for their main family.
-- `readable` and `writable` must be JSON booleans.
-- At least one of `readable` or `writable` must be true.
+- The exact datapoint subtype is retained. DPT 4.001 uses ASCII conversion,
+  DPT 5.001 uses percent scaling, and DPT 5.003 uses angle conversion; other
+  subtypes use the codec for their main family.
 - Object IDs and group addresses must both be unique.
 - Unknown or duplicate JSON fields are rejected.
 - Invalid JSON rejects the complete registry. KNX reports an error while the

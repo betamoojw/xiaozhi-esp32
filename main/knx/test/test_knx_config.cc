@@ -37,6 +37,50 @@ constexpr char kValidConfiguration[] = R"json([
     }
 ])json";
 
+constexpr char kValidConfigurationNewFormat[] = R"json({
+    "media_type": "knx_ip",
+    "media_parameters": {
+        "multicast_address": "224.0.23.12",
+        "udp_port": 3671,
+        "transport_mode": "routing",
+        "interface_identifier": "KNX-IP-Interface",
+        "nat": false
+    },
+    "physical_address": "15.15.199",
+    "communication_objects": [
+        {
+            "id": "test_switch_command",
+            "name": "Test Switch Command",
+            "description": "Generic writable boolean used for KNX integration testing",
+            "group_address": "1/0/1",
+            "datapoint_type": "DPT-1.001",
+            "readable": false,
+            "writable": true,
+            "unit": null
+        },
+        {
+            "id": "test_switch_status",
+            "name": "Test Switch Status",
+            "description": "Generic boolean feedback used for KNX integration testing",
+            "group_address": "1/0/2",
+            "datapoint_type": "DPT-1.001",
+            "readable": true,
+            "writable": false,
+            "unit": null
+        },
+        {
+            "id": "test_temperature",
+            "name": "Test Temperature",
+            "description": "Generic two-byte floating-point sensor used for KNX integration testing",
+            "group_address": "2/0/1",
+            "datapoint_type": "DPT-9.001",
+            "readable": true,
+            "writable": false,
+            "unit": "°C"
+        }
+    ]
+})json";
+
 bool Parse(const std::string& json, size_t maximum_objects = 8, size_t maximum_addresses = 8) {
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
@@ -104,6 +148,33 @@ void TestEmptyRegistry() {
     assert(canonical_json == "[]");
 }
 
+void TestNewFormatConfiguration() {
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+    std::string error;
+    assert(KnxParseConfiguration(kValidConfigurationNewFormat, 8, 8, objects, canonical_json,
+                                 error));
+    assert(objects.size() == 3);
+    assert(objects[0].id == "test_switch_command");
+    assert(!objects[0].readable && objects[0].writable);
+    assert(objects[1].readable && !objects[1].writable);
+    assert(objects[2].id == "test_temperature");
+    assert((objects[2].datapoint_type == KnxDpt{9, 1, true}));
+    assert(objects[2].unit == "°C");
+    assert(!canonical_json.empty());
+}
+
+void TestNewFormatWithUnits() {
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+    std::string error;
+    assert(KnxParseConfiguration(kValidConfigurationNewFormat, 8, 8, objects, canonical_json,
+                                 error));
+    // Check that units are properly parsed
+    assert(objects[0].unit.empty());  // null in JSON becomes empty string
+    assert(objects[2].unit == "°C");
+}
+
 }  // namespace
 
 int main() {
@@ -112,6 +183,8 @@ int main() {
     TestAddressesAndIds();
     TestPermissionsAndLimits();
     TestEmptyRegistry();
+    TestNewFormatConfiguration();
+    TestNewFormatWithUnits();
     std::cout << "All KNX configuration tests passed\n";
     return 0;
 }

@@ -20,4 +20,5 @@ bool KnxWriteRuntimeConfiguration(const std::string& json_text, std::string& err
 bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
                            size_t maximum_group_addresses,
                            std::vector<KnxCommunicationObject>& objects,
-                           std::string& canonical_json, std::string& error);
+                           std::string& canonical_json, std::string& error,
+                           std::string* physical_address = nullptr);

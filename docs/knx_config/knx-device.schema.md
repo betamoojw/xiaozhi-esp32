@@ -218,6 +218,7 @@ Applications that require a closed DPT catalogue should validate the identifier 
 | `current_value` | null/bool/number/string/array/object | Flexible JSON representation. |
 | `valid` | boolean | JSON boolean only. |
 | `last_update_timestamp` | string | RFC 3339 `date-time`. |
+| `unit` | string or null | Optional, max 32 chars. Unit of measurement (e.g., "°C", "%", "dB"). |
 
 ## 8. KNX group address format
 
@@ -301,7 +302,33 @@ The schema cannot generically prove that a particular `current_value` is semanti
 
 For example, an application can enforce that `DPT-1.001` is boolean and that `DPT-5.001` is a value in the DPT's defined range. JSON Schema itself is used here to guarantee that the value is valid JSON and belongs to an allowed broad representation class.
 
-## 11. Timestamp requirements
+## 11. Unit of measurement
+
+`unit` is an optional string field that describes the unit of measurement for the communication object's value.
+
+It can be:
+
+- `null` when no unit is applicable (e.g., for boolean on/off values or counts).
+- A string describing the unit (e.g., `"°C"`, `"%"`, `"dB"`, `"kWh"`, `"W"`, `"m/s"`).
+- Maximum 32 characters in length.
+
+Examples:
+
+```json
+{ "datapoint_type": "DPT-9.001", "current_value": 21.7, "unit": "°C" }
+```
+
+```json
+{ "datapoint_type": "DPT-5.001", "current_value": 72.5, "unit": "%" }
+```
+
+```json
+{ "datapoint_type": "DPT-1.001", "current_value": true, "unit": null }
+```
+
+The `unit` field is primarily useful for numeric and sensor values. Applications should use this field to provide context about the meaning and scale of `current_value`.
+
+## 12. Timestamp requirements
 
 `last_update_timestamp` uses JSON Schema's `format: date-time`.
 
@@ -313,7 +340,7 @@ Example:
 
 A JSON Schema validator's format enforcement can be configured differently, so applications that require strict timestamp validation should enable format assertion/checking in their validator.
 
-## 12. Uniqueness of communication object IDs
+## 13. Uniqueness of communication object IDs
 
 Each communication object has an `id` that is intended to be unique within the device.
 
@@ -328,7 +355,7 @@ for every pair of communication objects i != j:
 
 `uniqueItems: true` is also present, but that only prevents two entire array items from being identical; it does not, by itself, guarantee unique `id` values.
 
-## 13. Complete example
+## 14. Complete example
 
 See `knx-device.example.json`. In summary, the example contains:
 
@@ -337,7 +364,7 @@ See `knx-device.example.json`. In summary, the example contains:
 - four communication objects;
 - boolean, percentage, temperature, and scene datapoint examples.
 
-## 14. Extensibility guidance
+## 15. Extensibility guidance
 
 ### Future media types
 
@@ -379,7 +406,7 @@ Such additions should not duplicate `group_address`, `datapoint_type`, or the co
 
 The schema `$id` should be changed to the organization's stable schema URI. If breaking changes are introduced, publish a new schema version rather than silently changing the meaning of existing properties.
 
-## 15. Semantic validation not fully expressible in standard JSON Schema
+## 16. Semantic validation not fully expressible in standard JSON Schema
 
 The following rules are documented separately because expressing them generically would either require an enormous DPT-specific schema or application-specific knowledge:
 

@@ -1032,7 +1032,7 @@ menu "KNX/IP Configuration"
         default "224.0.23.12"
         depends on XIAOZHI_KNX_IP
 
-    config XIAOZHI_KNX_IP_PORT
+    config XIAOZHI_KNX_IP_UDP_PORT
         int "KNXnet/IP UDP port"
         range 1 65535
         default 3671

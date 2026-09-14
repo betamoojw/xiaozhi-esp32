@@ -62,7 +62,8 @@
       "writable": true,
       "current_value": 3,
       "valid": true,
-      "last_update_timestamp": "2026-09-09T20:30:20-05:00"
+      "last_update_timestamp": "2026-09-09T20:30:20-05:00",
+      "unit": null
     }
   ]
 }

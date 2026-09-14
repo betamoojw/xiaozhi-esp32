@@ -69,7 +69,7 @@ bool KnxManager::LoadConfiguration() {
 
     if (!KnxParseConfiguration(json_text, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
                                CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects, canonical_json,
-                               last_error_)) {
+                               last_error_, &config_physical_address_)) {
         ESP_LOGE(kTag, "%s", last_error_.c_str());
         return false;
     }
@@ -111,7 +111,7 @@ bool KnxManager::ImportConfiguration(const std::string& json_text, size_t& objec
     std::string canonical_json;
     if (!KnxParseConfiguration(json_text, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
                                CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects, canonical_json,
-                               error)) {
+                               error, &config_physical_address_)) {
         return false;
     }
 
@@ -241,7 +241,11 @@ bool KnxManager::StartTransport() {
     }
 
     knx_address_t physical_address = 0;
-    if (!KnxParsePhysicalAddress(CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS, physical_address)) {
+    // Use physical address from JSON config if available, otherwise use config macro
+    const std::string& address_to_parse = !config_physical_address_.empty()
+                                               ? config_physical_address_
+                                               : CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS;
+    if (!KnxParsePhysicalAddress(address_to_parse, physical_address)) {
         SetState(KnxServiceState::kError, "Invalid configured KNX physical address");
         return false;
     }
@@ -292,7 +296,7 @@ bool KnxManager::StartTransport() {
     active_ipv4_ = ip_info.ip.addr;
     SetState(KnxServiceState::kRunning);
     ESP_LOGI(kTag, "KNX routing started on %s:%d", CONFIG_XIAOZHI_KNX_IP_MULTICAST_ADDRESS,
-             CONFIG_XIAOZHI_KNX_IP_PORT);
+             CONFIG_XIAOZHI_KNX_IP_UDP_PORT);
     return true;
 }
 
@@ -538,7 +542,11 @@ std::string KnxManager::GetEndpoint() const {
 
 std::string KnxManager::GetPhysicalAddress() const {
     knx_address_t address = 0;
-    return KnxParsePhysicalAddress(CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS, address)
+    // Use physical address from JSON config if available, otherwise use config macro
+    const std::string& address_to_parse = !config_physical_address_.empty()
+                                               ? config_physical_address_
+                                               : CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS;
+    return KnxParsePhysicalAddress(address_to_parse, address)
                ? KnxFormatPhysicalAddress(address)
                : "invalid";
 }

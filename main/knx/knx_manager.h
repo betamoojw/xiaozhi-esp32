@@ -78,6 +78,7 @@ private:
     std::mutex import_mutex_;
     std::mutex transport_mutex_;
     std::vector<KnxCommunicationObject> objects_;
+    std::string config_physical_address_;  // Physical address from JSON, if present
     KnxServiceState state_ = KnxServiceState::kDisabled;
     std::string last_error_;
     uint64_t last_communication_ms_ = 0;

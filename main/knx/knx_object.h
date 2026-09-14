@@ -33,6 +33,7 @@ struct KnxCommunicationObject {
     KnxDpt datapoint_type;
     bool readable = false;
     bool writable = false;
+    std::string unit;  // Optional unit of measurement (e.g., "%", "°C")
     KnxValue current_value = false;
     bool valid = false;
     uint64_t last_update_ms = 0;

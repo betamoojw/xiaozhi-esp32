@@ -246,7 +246,7 @@ User-facing options:
 - `XIAOZHI_KNX_IP`: enable the integration, default off.
 - `XIAOZHI_KNX_IP_PHYSICAL_ADDRESS`: canonical `area.line.member` string.
 - `XIAOZHI_KNX_IP_MULTICAST_ADDRESS`: default `224.0.23.12`.
-- `XIAOZHI_KNX_IP_PORT`: default 3671.
+- `XIAOZHI_KNX_IP_UDP_PORT`: default 3671.
 - `XIAOZHI_KNX_IP_RECONNECT_INTERVAL_MS`: bounded retry delay.
 - `XIAOZHI_KNX_IP_MAX_OBJECTS`: bounded logical object count no greater than
   the configured callback capacity unless addresses are shared.

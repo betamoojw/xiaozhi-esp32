@@ -74,6 +74,7 @@ writable
 current_value
 valid
 last_update_timestamp
+unit
 ```
 
 Define the type, purpose, required/optional status, and validation rules for every field.
@@ -90,6 +91,7 @@ Recommended interpretation:
 * `current_value` — most recently known value of the communication object.
 * `valid` — indicates whether `current_value` is currently considered valid.
 * `last_update_timestamp` — timestamp of the most recent value update.
+* `unit` — optional unit of measurement for the value (e.g., "°C", "%", "kWh"), or null if no unit applies.
 
 The schema should support different DPTs without assuming that `current_value` is always a string or number. Define an appropriate representation that can accommodate different KNX datapoint types.
 
@@ -171,9 +173,10 @@ The documentation must include:
 9. KNX group address format
 10. KNX datapoint type representation
 11. `current_value` representation
-12. Timestamp requirements
-13. Complete example
-14. Extensibility guidance
+12. Unit of measurement
+13. Timestamp requirements
+14. Complete example
+15. Extensibility guidance
 
 ### 8. Design Principles
 
@@ -199,6 +202,7 @@ The implementation is considered complete when:
 * [ ] A KNX physical address is represented and validated.
 * [ ] `communication_objects` is an array.
 * [ ] Every communication object supports all required fields listed above.
+* [ ] The `unit` field is optional and can be null or a string with max 32 characters.
 * [ ] Group addresses and physical addresses have defined validation rules.
 * [ ] Datapoint types are explicitly represented.
 * [ ] Different KNX datapoint value types can be represented correctly.

@@ -30,6 +30,7 @@ constexpr char kLittleFsPartitionLabel[] = "littlefs";
 bool IsKnownField(const char* name) {
     constexpr const char* kFields[] = {
         "id", "name", "description", "group_address", "datapoint_type", "readable", "writable",
+        "unit",
     };
     return name != nullptr &&
            std::any_of(std::begin(kFields), std::end(kFields),
@@ -204,25 +205,55 @@ bool KnxWriteRuntimeConfiguration(const std::string& json_text, std::string& err
 bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
                            size_t maximum_group_addresses,
                            std::vector<KnxCommunicationObject>& objects,
-                           std::string& canonical_json, std::string& error) {
+                           std::string& canonical_json, std::string& error,
+                           std::string* physical_address) {
     objects.clear();
     canonical_json.clear();
     error.clear();
+    if (physical_address != nullptr) {
+        physical_address->clear();
+    }
     if (json_text.empty() || json_text.size() > kKnxMaximumConfigurationLength) {
         error = "KNX configuration is empty or exceeds the size limit";
         return false;
     }
 
     cJSON* root = cJSON_ParseWithLengthOpts(json_text.c_str(), json_text.size() + 1, nullptr, true);
-    if (!cJSON_IsArray(root)) {
+    if (root == nullptr) {
+        error = "Invalid JSON in KNX configuration";
+        return false;
+    }
+
+    cJSON* objects_array = nullptr;
+    
+    // Handle both old array format and new object format
+    if (cJSON_IsArray(root)) {
+        // Legacy format: root is directly the array
+        objects_array = root;
+    } else if (cJSON_IsObject(root)) {
+        // New format: root is an object with "communication_objects" field
+        // Extract physical_address if provided and present in root
+        if (physical_address != nullptr) {
+            cJSON* addr_item = cJSON_GetObjectItemCaseSensitive(root, "physical_address");
+            if (cJSON_IsString(addr_item) && addr_item->valuestring != nullptr) {
+                *physical_address = addr_item->valuestring;
+            }
+        }
+        objects_array = cJSON_GetObjectItemCaseSensitive(root, "communication_objects");
+        if (!cJSON_IsArray(objects_array)) {
+            cJSON_Delete(root);
+            error = "New KNX configuration format must contain a 'communication_objects' array";
+            return false;
+        }
+    } else {
         cJSON_Delete(root);
-        error = "KNX object configuration must be a JSON array";
+        error = "KNX configuration must be a JSON object or array";
         return false;
     }
 
     bool valid = true;
     const cJSON* item = nullptr;
-    cJSON_ArrayForEach (item, root) {
+    cJSON_ArrayForEach (item, objects_array) {
         if (objects.size() >= maximum_objects || !cJSON_IsObject(item)) {
             error = "KNX object configuration exceeds limits or contains a non-object";
             valid = false;
@@ -256,6 +287,7 @@ bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
             !JsonString(item, "datapoint_type", datapoint_type, true, 16) ||
             !JsonBoolean(item, "readable", object.readable) ||
             !JsonBoolean(item, "writable", object.writable) ||
+            !JsonString(item, "unit", object.unit, false, 32) ||
             !KnxParseGroupAddress(object.group_address, object.parsed_group_address) ||
             !KnxParseDpt(datapoint_type, object.datapoint_type)) {
             error = "Invalid KNX communication object configuration";
@@ -275,7 +307,7 @@ bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
         valid = false;
     }
     if (valid) {
-        char* printed = cJSON_PrintUnformatted(root);
+        char* printed = cJSON_PrintUnformatted(objects_array);
         if (printed == nullptr) {
             error = "Could not serialize KNX configuration";
             valid = false;
