@@ -1,3 +1,11 @@
+# ✨ さらに多彩なカスタム機能
+
+## Home Assistant 不要の KNXnet/IP 対応
+
+KNXnet/IP を Xiaozhi ESP32 ファームウェアに直接統合することで、HA（Home Assistant など）を必要とせず、単独で動作するスマートホーム音声アシスタントを構築できます。
+
+![Smart 86 Panel XiaozhiAI KNX IP](docs/knx_config/Smart%2086%20Panel%20XiaozhiAI%20KNX%20IP.png)
+
 # MCP ベースのチャットボット
 
 （日本語 | [中文](README_zh.md) | [English](README.md)）
