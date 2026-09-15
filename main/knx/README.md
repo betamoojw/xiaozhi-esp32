@@ -27,7 +27,7 @@ asynchronous, so XiaoZhi's main task never waits for a KNX response.
 ## Configuration Format
 
 The communication-object registry is loaded from
-`/littlefs/interfaces/knxConfig.json`. The configuration supports two formats:
+`/littlefs/interfaces/knxConfig.json` as a JSON object.
 
 ### New Format (Recommended)
 
@@ -69,30 +69,12 @@ Each communication object includes:
 - `writable`: Whether the object can send values to the KNX bus
 - `unit`: Unit of measurement (optional, can be null or a string like "°C" or "%")
 
-### Legacy Format (Deprecated)
-
-The legacy format is a direct array of communication objects (deprecated):
-
-```json
-[
-    {
-        "id": "light_status",
-        "name": "Light Status",
-        "description": "Status of the main light",
-        "group_address": "1/0/1",
-        "datapoint_type": "DPT-1.001",
-        "readable": true,
-        "writable": false
-    }
-]
-```
-
 ## Migration
 
 On the first boot after upgrading from the older NVS-backed implementation, an existing NVS
 registry is validated and migrated to LittleFS when the runtime file does not exist. A fresh
-device creates an empty registry. Existing configurations in the legacy array format are
-automatically detected and supported for backward compatibility.
+device creates an empty registry. Existing NVS-backed array registries are wrapped in the
+required root object during migration; LittleFS files must already use the root-object format.
 
 Commissioning uses the owner-only `self.knx.import_configuration` MCP tool. MCP imports
 validate and atomically commit the complete registry to LittleFS before changing the active

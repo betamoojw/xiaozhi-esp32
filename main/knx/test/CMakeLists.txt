@@ -25,7 +25,10 @@ add_executable(knx_config_test
     ../../../managed_components/espressif__cjson/cJSON/cJSON.c
 )
 target_compile_features(knx_config_test PRIVATE cxx_std_17)
-target_compile_definitions(knx_config_test PRIVATE XIAOZHI_KNX_CONFIG_PARSER_ONLY)
+target_compile_definitions(knx_config_test PRIVATE
+    XIAOZHI_KNX_CONFIG_PARSER_ONLY
+    KNX_CONFIGURATION_FIXTURE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../../../littlefs/interfaces/knxConfig.json"
+)
 target_include_directories(knx_config_test PRIVATE
     ..
     ${ESP_KNX_IP_DIR}/include

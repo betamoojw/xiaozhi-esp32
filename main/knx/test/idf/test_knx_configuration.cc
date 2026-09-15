@@ -95,7 +95,7 @@ TEST_CASE("KNX configuration accepts a valid registry", "[knx][configuration]") 
     std::string canonical_json;
     std::string error;
     TEST_ASSERT_TRUE(
-        KnxParseConfiguration(kValidConfiguration, 8, 8, objects, canonical_json, error));
+        KnxParseConfiguration(kValidConfigurationNewFormat, 8, 8, objects, canonical_json, error));
     TEST_ASSERT_EQUAL(3, objects.size());
     TEST_ASSERT_EQUAL_STRING("test_switch_command", objects[0].id.c_str());
     TEST_ASSERT_FALSE(objects[0].readable);
@@ -118,7 +118,7 @@ TEST_CASE("KNX configuration accepts component DPTs and rejects unknown families
           "[knx][configuration]") {
     std::vector<KnxCommunicationObject> objects;
     std::string error;
-    std::string json = kValidConfiguration;
+    std::string json = kValidConfigurationNewFormat;
     json.replace(json.find("DPT-1.001"), 9, "DPT-17.001");
     TEST_ASSERT_TRUE(Parse(json, 8, objects, error));
     json.replace(json.find("DPT-17.001"), 10, "DPT-32.001");
@@ -128,11 +128,11 @@ TEST_CASE("KNX configuration accepts component DPTs and rejects unknown families
 TEST_CASE("KNX configuration rejects invalid and duplicate addresses", "[knx][configuration]") {
     std::vector<KnxCommunicationObject> objects;
     std::string error;
-    std::string invalid = kValidConfiguration;
+    std::string invalid = kValidConfigurationNewFormat;
     invalid.replace(invalid.find("1/0/1"), 5, "32/0/1");
     TEST_ASSERT_FALSE(Parse(invalid, 8, objects, error));
 
-    std::string duplicate = kValidConfiguration;
+    std::string duplicate = kValidConfigurationNewFormat;
     duplicate.replace(duplicate.find("2/0/1"), 5, "1/0/1");
     TEST_ASSERT_FALSE(Parse(duplicate, 8, objects, error));
 }
@@ -141,7 +141,7 @@ TEST_CASE("KNX configuration rejects duplicate IDs and invalid permissions",
           "[knx][configuration]") {
     std::vector<KnxCommunicationObject> objects;
     std::string error;
-    std::string duplicate = kValidConfiguration;
+    std::string duplicate = kValidConfigurationNewFormat;
     duplicate.replace(duplicate.find("test_switch_status"), 18, "test_switch_command");
     TEST_ASSERT_FALSE(Parse(duplicate, 8, objects, error));
 
@@ -159,7 +159,7 @@ TEST_CASE("KNX configuration rejects duplicate IDs and invalid permissions",
 TEST_CASE("KNX configuration enforces object limits", "[knx][configuration]") {
     std::vector<KnxCommunicationObject> objects;
     std::string error;
-    TEST_ASSERT_FALSE(Parse(kValidConfiguration, 1, objects, error));
+    TEST_ASSERT_FALSE(Parse(kValidConfigurationNewFormat, 1, objects, error));
 }
 
 TEST_CASE("KNX configuration uses LittleFS runtime paths", "[knx][configuration]") {
@@ -172,9 +172,17 @@ TEST_CASE("KNX configuration accepts an empty registry", "[knx][configuration]")
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
     std::string error;
-    TEST_ASSERT_TRUE(KnxParseConfiguration("[]", 8, 8, objects, canonical_json, error));
+    constexpr char kEmptyConfiguration[] = R"json({
+      "media_type":"knx_ip",
+      "media_parameters":{"multicast_address":"224.0.23.12","udp_port":3671,"transport_mode":"routing","interface_identifier":"KNX-IP-Interface","nat":false},
+      "physical_address":"15.15.199",
+      "communication_objects":[]
+    })json";
+    TEST_ASSERT_TRUE(KnxParseConfiguration(kEmptyConfiguration, 8, 8, objects, canonical_json,
+                                            error));
     TEST_ASSERT_TRUE(objects.empty());
-    TEST_ASSERT_EQUAL_STRING("[]", canonical_json.c_str());
+    TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                canonical_json.find("\"communication_objects\":[]"));
 }
 
 TEST_CASE("KNX configuration accepts new format with communication_objects",

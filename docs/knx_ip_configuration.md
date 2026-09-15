@@ -28,9 +28,9 @@ addresses (`area.line.member`) are accepted. Group ranges are 0..31, 0..7, and
 The canonical registry is `/littlefs/interfaces/knxConfig.json` in the writable
 LittleFS partition, with a maximum serialized size of 65,535 bytes. At boot, the
 firmware loads and validates that file. If it does not exist, an existing value
-from the legacy NVS namespace `knx`, key `config`, is validated and atomically
-migrated to LittleFS. If neither source exists, the firmware writes and loads
-an empty registry (`[]`). The legacy NVS value is retained as a non-destructive
+from the legacy NVS namespace `knx`, key `config`, is wrapped in the root object
+and atomically migrated to LittleFS. If neither source exists, the firmware writes
+and loads an empty root-object registry. The legacy NVS value is retained as a non-destructive
 rollback copy but is not read while the LittleFS file exists and is not updated
 by new imports.
 
@@ -47,11 +47,9 @@ addresses. No device reboot is required to apply a successful import.
 
 ### Configuration Format
 
-The configuration file supports two formats:
+The configuration file must be a root JSON object:
 
-#### New Format (Recommended)
-
-The new format is an object with media parameters, physical address, and communication objects:
+The root object contains KNX/IP media parameters, physical address, and communication objects:
 
 ```json
 {
@@ -79,24 +77,6 @@ The new format is an object with media parameters, physical address, and communi
 }
 ```
 
-#### Legacy Format (Deprecated)
-
-The legacy array format is still supported for backward compatibility:
-
-```json
-[
-  {
-    "id": "site_unique_id",
-    "name": "Human-readable semantic name",
-    "description": "Optional concise location and function",
-    "group_address": "1/2/3",
-    "datapoint_type": "DPT-1.001",
-    "readable": true,
-    "writable": false
-  }
-]
-```
-
 ### Object Schema
 
 Each communication object requires:
@@ -105,7 +85,7 @@ Each communication object requires:
 - `name`: required, at most 80 bytes
 - `description`: optional, at most 192 bytes
 - `group_address`: required, must use exact three-level syntax
-- `datapoint_type`: required, accepts a supported family with optional subtype
+- `datapoint_type`: required, canonical `DPT-family.subtype` with a three-digit subtype
 - `readable`: required boolean; must be true if object receives values from KNX bus
 - `writable`: required boolean; must be true if object sends values to KNX bus
 - `unit`: optional string; unit of measurement (e.g., "°C", "%", "dB", etc.)
@@ -134,11 +114,10 @@ Do not grant write access merely to make an AI command succeed.
 
 ## Import Procedure
 
-1. Start with [the generic test registry](../main/knx/test/knx_objects.test.json)
-  or create a site-specific JSON array using the schema above.
+1. Start with a root-object configuration using the schema above.
 2. Open an authenticated MCP client that can list tools with the `user`
   audience.
-3. Call `self.knx.import_configuration` with the complete JSON array encoded
+3. Call `self.knx.import_configuration` with the complete root JSON object encoded
   as the string property `configuration`.
 4. Confirm the response contains `imported: true`, `persisted: true`, and the
   expected `object_count`.
@@ -150,11 +129,12 @@ Example MCP arguments using the test switch command:
 
 ```json
 {
-  "configuration": "[{\"id\":\"test_switch_command\",\"name\":\"Test Switch Command\",\"description\":\"Generic commissioning object\",\"group_address\":\"1/0/1\",\"datapoint_type\":\"DPT-1.001\",\"readable\":false,\"writable\":true}]"
+  "configuration": "{\"media_type\":\"knx_ip\",\"media_parameters\":{\"multicast_address\":\"224.0.23.12\",\"udp_port\":3671,\"transport_mode\":\"routing\",\"interface_identifier\":\"KNX-IP-Interface\",\"nat\":false},\"physical_address\":\"15.15.199\",\"communication_objects\":[{\"id\":\"test_switch_command\",\"name\":\"Test Switch Command\",\"description\":\"Generic commissioning object\",\"group_address\":\"1/0/1\",\"datapoint_type\":\"DPT-1.001\",\"readable\":false,\"writable\":true}]}"
 }
 ```
 
-Import `[]` to persist an empty registry and remove all configured callbacks.
+Import a root object whose `communication_objects` is `[]` to persist an empty registry and
+remove all configured callbacks.
 The import tool is deliberately user-only so the AI model cannot rewrite its
 own KNX authorization boundary.
 
