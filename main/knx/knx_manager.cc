@@ -252,7 +252,7 @@ bool KnxManager::StartTransport() {
     esp_knx_ip_config_t config = ESP_KNX_IP_CONFIG_DEFAULT(netif);
     config.physical_address = physical_address;
     config.multicast_address = CONFIG_XIAOZHI_KNX_IP_MULTICAST_ADDRESS;
-    config.port = CONFIG_XIAOZHI_KNX_IP_PORT;
+    config.port = CONFIG_XIAOZHI_KNX_IP_UDP_PORT;
     config.load_physical_address_from_nvs = false;
     esp_err_t result = esp_knx_ip_create(&config, &handle_);
     if (result != ESP_OK) {
@@ -537,7 +537,7 @@ std::string KnxManager::GetLastError() const {
 
 std::string KnxManager::GetEndpoint() const {
     return std::string(CONFIG_XIAOZHI_KNX_IP_MULTICAST_ADDRESS) + ":" +
-           std::to_string(CONFIG_XIAOZHI_KNX_IP_PORT);
+           std::to_string(CONFIG_XIAOZHI_KNX_IP_UDP_PORT);
 }
 
 std::string KnxManager::GetPhysicalAddress() const {
