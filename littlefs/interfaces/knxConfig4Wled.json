@@ -150,6 +150,16 @@
             "unit": null
         },
 		{
+            "id": "rgb_write",
+            "name": "Rgb",
+            "description": "WLED Rgb control/write object",
+            "group_address": "2/1/13",
+            "datapoint_type": "DPT-232.600",
+            "readable": false,
+            "writable": true,
+            "unit": null
+        },
+		{
             "id": "power_read",
             "name": "Power",
             "description": "WLED Power status/read object",
@@ -285,6 +295,16 @@
             "description": "WLED Preset status/read object",
             "group_address": "2/1/12",
             "datapoint_type": "DPT-5.010",
+            "readable": true,
+            "writable": false,
+            "unit": null
+        },
+		{
+            "id": "rgb_read",
+            "name": "Rgb",
+            "description": "WLED Rgb status/read object",
+            "group_address": "2/1/13",
+            "datapoint_type": "DPT-232.600",
             "readable": true,
             "writable": false,
             "unit": null
