@@ -53,6 +53,7 @@ public:
                            std::string& error);
 
 private:
+    friend struct KnxManagerTestAccess;
     static constexpr uint32_t kStartNotification = 1U << 0;
     static constexpr uint32_t kStopNotification = 1U << 1;
 

@@ -98,6 +98,12 @@ bool KnxManager::LoadConfiguration() {
 
 bool KnxManager::RegisterCommunicationObject(const KnxCommunicationObject& object,
                                              std::string& error) {
+    if (!KnxValidateDpt(object.datapoint_type) ||
+        (object.valid && !KnxValidateValue(object.datapoint_type, object.current_value))) {
+        error = "Invalid KNX object '" + object.id + "': " + KnxDptName(object.datapoint_type) +
+                " has an unsupported subtype or invalid cached value";
+        return false;
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     const auto duplicate_id =
         std::find_if(objects_.begin(), objects_.end(),
@@ -123,9 +129,10 @@ bool KnxManager::ImportConfiguration(const std::string& json_text, size_t& objec
     std::lock_guard<std::mutex> import_lock(import_mutex_);
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
+    std::string physical_address;
     if (!KnxParseConfiguration(json_text, CONFIG_XIAOZHI_KNX_IP_MAX_OBJECTS,
                                CONFIG_ESP_KNX_IP_MAX_GROUP_ADDRESSES, objects, canonical_json,
-                               error, &config_physical_address_)) {
+                               error, &physical_address)) {
         return false;
     }
 
@@ -139,6 +146,7 @@ bool KnxManager::ImportConfiguration(const std::string& json_text, size_t& objec
     {
         std::lock_guard<std::mutex> lock(mutex_);
         objects_ = std::move(objects);
+        config_physical_address_ = std::move(physical_address);
         object_count = objects_.size();
         configuration_valid_ = true;
         last_error_.clear();
@@ -256,9 +264,7 @@ bool KnxManager::StartTransport() {
 
     knx_address_t physical_address = 0;
     // Use physical address from JSON config if available, otherwise use config macro
-    const std::string& address_to_parse = !config_physical_address_.empty()
-                                               ? config_physical_address_
-                                               : CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS;
+    const std::string address_to_parse = GetPhysicalAddress();
     if (!KnxParsePhysicalAddress(address_to_parse, physical_address)) {
         SetState(KnxServiceState::kError, "Invalid configured KNX physical address");
         return false;
@@ -460,13 +466,15 @@ bool KnxManager::WriteObject(const KnxCommunicationObject& object, const std::st
     }
     KnxValue value;
     if (!KnxParseValue(object.datapoint_type, text, value)) {
-        error = std::string("Invalid value for ") + KnxDptName(object.datapoint_type);
+        error = "Invalid value for KNX object '" + object.id + "' (" +
+                KnxDptName(object.datapoint_type) +
+                "): expected the documented representation, range and allowed values";
         return false;
     }
     std::vector<uint8_t> encoded;
     if (!KnxEncodeValue(object.datapoint_type, value, encoded)) {
-        error = std::string("Value is outside the supported range for ") +
-                KnxDptName(object.datapoint_type);
+        error = "Value cannot be encoded for KNX object '" + object.id + "' (" +
+                KnxDptName(object.datapoint_type) + ")";
         return false;
     }
     return Send(object.parsed_group_address, KNX_COMMAND_WRITE, encoded.data(), encoded.size(),
@@ -555,6 +563,7 @@ std::string KnxManager::GetEndpoint() const {
 }
 
 std::string KnxManager::GetPhysicalAddress() const {
+    std::lock_guard<std::mutex> lock(mutex_);
     knx_address_t address = 0;
     // Use physical address from JSON config if available, otherwise use config macro
     const std::string& address_to_parse = !config_physical_address_.empty()

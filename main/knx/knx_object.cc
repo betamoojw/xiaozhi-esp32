@@ -2,6 +2,8 @@
 
 #include <esp_knx_ip/knx_dpt.h>
 
+#include <algorithm>
+#include <array>
 #include <cerrno>
 #include <charconv>
 #include <cmath>
@@ -55,7 +57,7 @@ bool ParseInteger(const std::string& text, T& value) {
 }
 
 bool ParseFloat(const std::string& text, float& value) {
-    if (text.empty()) {
+    if (text.empty() || text.find_first_not_of("0123456789+-.eE") != std::string::npos) {
         return false;
     }
     errno = 0;
@@ -82,8 +84,11 @@ bool IsFloatDpt(const KnxDpt& dpt) {
            (dpt.main == 5 && dpt.has_subtype && (dpt.subtype == 1 || dpt.subtype == 3));
 }
 
-size_t WireSize(uint16_t main) {
-    if (main <= 6 || (main >= 17 && main <= 21) || main == 23 || (main >= 25 && main <= 26) ||
+size_t WireSize(const KnxDpt& dpt) {
+    const auto main = dpt.main;
+    if (dpt.has_subtype && main == 30) return 3;
+    if (dpt.has_subtype && main == 31) return 1;
+    if (main <= 6 || main == 17 || main == 18 || main == 20 || main == 21 || main == 23 || (main >= 25 && main <= 26) ||
         main == 30)
         return 1;
     if (main == 7 || main == 8 || main == 9 || main == 22 || main == 234)
@@ -101,9 +106,13 @@ size_t WireSize(uint16_t main) {
     return 0;
 }
 
+size_t PayloadOffset(const KnxDpt& dpt) {
+    return dpt.main <= 3 || (dpt.has_subtype && (dpt.main == 23 || dpt.main == 31)) ? 0 : 1;
+}
+
 const uint8_t* Payload(const KnxDpt& dpt, const uint8_t* data, size_t length,
                        size_t& payload_length) {
-    const size_t offset = dpt.main <= 3 ? 0 : 1;
+    const size_t offset = PayloadOffset(dpt);
     if (length <= offset)
         return nullptr;
     payload_length = length - offset;
@@ -232,11 +241,12 @@ bool KnxParseDpt(const std::string& text, KnxDpt& datapoint_type) {
     KnxDpt parsed{main, 0, false};
     if (separator != std::string::npos) {
         const std::string subtype_text = value.substr(separator + 1);
-        if (subtype_text.empty() || subtype_text.size() > 3 ||
+        if (subtype_text.empty() || subtype_text.size() > 5 ||
             !ParseInteger(subtype_text, parsed.subtype))
             return false;
         parsed.has_subtype = true;
     }
+    if (!KnxValidateDpt(parsed)) return false;
     datapoint_type = parsed;
     return true;
 }
@@ -250,7 +260,13 @@ std::string KnxDptName(const KnxDpt& datapoint_type) {
     return output.str();
 }
 
-bool KnxParseValue(const KnxDpt& dpt, const std::string& text, KnxValue& value) {
+static bool ParseValueUnchecked(const KnxDpt& dpt, const std::string& text, KnxValue& value) {
+    if (text == "invalid" && dpt.has_subtype &&
+        (dpt.main == 9 || (dpt.main == 8 && dpt.subtype == 10) ||
+         (dpt.main == 20 && dpt.subtype == 1200))) {
+        value = std::monostate{};
+        return true;
+    }
     if (dpt.main == 1) {
         bool parsed = false;
         if (!ParseBool(text, parsed))
@@ -304,7 +320,7 @@ bool KnxParseValue(const KnxDpt& dpt, const std::string& text, KnxValue& value) 
         value = parsed;
         return true;
     }
-    if (dpt.main == 12 || dpt.main == 15 || dpt.main == 31) {
+    if (dpt.main == 12 || dpt.main == 15 || (dpt.main == 31 && !dpt.has_subtype) || (dpt.main == 30 && dpt.has_subtype)) {
         uint32_t parsed{};
         if (!ParseInteger(text, parsed))
             return false;
@@ -312,7 +328,7 @@ bool KnxParseValue(const KnxDpt& dpt, const std::string& text, KnxValue& value) 
         return true;
     }
     if (dpt.main == 4 || dpt.main == 5 || dpt.main == 17 || dpt.main == 20 || dpt.main == 21 ||
-        dpt.main == 23 || dpt.main == 25 || dpt.main == 30) {
+        dpt.main == 23 || dpt.main == 25 || (dpt.main == 30 && !dpt.has_subtype) || (dpt.main == 31 && dpt.has_subtype)) {
         uint8_t parsed{};
         if (!ParseInteger(text, parsed))
             return false;
@@ -373,8 +389,8 @@ bool KnxParseValue(const KnxDpt& dpt, const std::string& text, KnxValue& value) 
             return true;
         }
         case 19: {
-            knx_dpt19_datetime_t parsed{};
-            if (fields.size() != 15 || !parse_u8(0, parsed.year) || !parse_u8(1, parsed.month) ||
+            KnxDateTime parsed{};
+            if ((fields.size() != 15 && fields.size() != 16) || !parse_u8(0, parsed.year) || !parse_u8(1, parsed.month) ||
                 !parse_u8(2, parsed.day) || !parse_u8(3, parsed.weekday) ||
                 !parse_u8(4, parsed.hour) || !parse_u8(5, parsed.minute) ||
                 !parse_u8(6, parsed.second) || !parse_bool(7, parsed.fault) ||
@@ -382,8 +398,10 @@ bool KnxParseValue(const KnxDpt& dpt, const std::string& text, KnxValue& value) 
                 !parse_bool(10, parsed.date_valid) || !parse_bool(11, parsed.weekday_valid) ||
                 !parse_bool(12, parsed.time_valid) ||
                 !parse_bool(13, parsed.daylight_saving_time) ||
-                !parse_bool(14, parsed.clock_quality))
+                !parse_bool(14, parsed.clock_quality) ||
+                (fields.size() == 16 && !parse_bool(15, parsed.year_valid)))
                 return false;
+            if (fields.size() == 15) parsed.year_valid = parsed.date_valid;
             value = parsed;
             return true;
         }
@@ -428,7 +446,9 @@ std::string KnxValueToString(const KnxValue& value) {
     return std::visit(
         [](const auto& item) {
             using Type = std::decay_t<decltype(item)>;
-            if constexpr (std::is_same_v<Type, bool>) {
+            if constexpr (std::is_same_v<Type, std::monostate>) {
+                return std::string("invalid");
+            } else if constexpr (std::is_same_v<Type, bool>) {
                 return std::string(item ? "true" : "false");
             } else if constexpr (std::is_arithmetic_v<Type>) {
                 return std::to_string(item);
@@ -455,7 +475,7 @@ std::string KnxValueToString(const KnxValue& value) {
                 } else if constexpr (std::is_same_v<Type, knx_dpt18_scene_control_t>) {
                     AppendBool(output, "learn", item.learn, first);
                     AppendNumber(output, "scene_number", item.scene_number, first);
-                } else if constexpr (std::is_same_v<Type, knx_dpt19_datetime_t>) {
+                } else if constexpr (std::is_same_v<Type, KnxDateTime>) {
                     AppendNumber(output, "year", item.year, first);
                     AppendNumber(output, "month", item.month, first);
                     AppendNumber(output, "day", item.day, first);
@@ -471,6 +491,7 @@ std::string KnxValueToString(const KnxValue& value) {
                     AppendBool(output, "time_valid", item.time_valid, first);
                     AppendBool(output, "daylight_saving_time", item.daylight_saving_time, first);
                     AppendBool(output, "clock_quality", item.clock_quality, first);
+                    AppendBool(output, "year_valid", item.year_valid, first);
                 } else if constexpr (std::is_same_v<Type, knx_dpt26_scene_info_t>) {
                     AppendBool(output, "active", item.active, first);
                     AppendNumber(output, "scene_number", item.scene_number, first);
@@ -494,7 +515,7 @@ std::string KnxValueToString(const KnxValue& value) {
         value);
 }
 
-bool KnxDecodeValue(const KnxDpt& dpt, const uint8_t* data, size_t length, KnxValue& value) {
+static bool DecodeValueUnchecked(const KnxDpt& dpt, const uint8_t* data, size_t length, KnxValue& value) {
     if (data == nullptr || length == 0) {
         return false;
     }
@@ -502,6 +523,28 @@ bool KnxDecodeValue(const KnxDpt& dpt, const uint8_t* data, size_t length, KnxVa
     const uint8_t* payload = Payload(dpt, data, length, payload_length);
     if (payload == nullptr)
         return false;
+    if (dpt.has_subtype) {
+        if (dpt.main == 30) return DecodeScalar<uint32_t>(payload, payload_length, knx_dpt31_decode, value);
+        if (dpt.main == 31) { value=payload[0]; return true; }
+        if (dpt.main == 234) {
+            std::string text(reinterpret_cast<const char*>(payload), 2);
+            for (char& c : text) {
+                if (dpt.subtype==1 && c>='A' && c<='Z') c+='a'-'A';
+                if (dpt.subtype==2 && c>='a' && c<='z') c-='a'-'A';
+            }
+            value=text; return true;
+        }
+        if (dpt.main == 26) {
+            knx_dpt26_scene_info_t p{};
+            if (!knx_dpt26_decode(payload,payload_length,&p)) return false;
+            p.active=!p.active; value=p; return true;
+        }
+        if (dpt.main == 27) {
+            knx_dpt27_combined_status_t p{};
+            if (!knx_dpt27_decode(payload,payload_length,&p)) return false;
+            std::swap(p.value,p.mask); value=p; return true;
+        }
+    }
     switch (dpt.main) {
         case 1:
             return DecodeScalar<bool>(payload, payload_length, knx_dpt1_decode, value);
@@ -559,9 +602,17 @@ bool KnxDecodeValue(const KnxDpt& dpt, const uint8_t* data, size_t length, KnxVa
         case 18:
             return DecodeStruct<knx_dpt18_scene_control_t>(payload, payload_length,
                                                            knx_dpt18_decode, value);
-        case 19:
-            return DecodeStruct<knx_dpt19_datetime_t>(payload, payload_length, knx_dpt19_decode,
-                                                      value);
+        case 19: {
+            if ((payload[1]&0xf0) || (payload[2]&0xe0) || (payload[4]&0xc0) ||
+                (payload[5]&0xc0) || (payload[7]&0x7f)) return false;
+            value = KnxDateTime{payload[0], payload[1], payload[2],
+                static_cast<uint8_t>(payload[3]>>5), static_cast<uint8_t>(payload[3]&31),
+                payload[4], payload[5], (payload[6]&128)!=0, (payload[6]&64)!=0,
+                (payload[6]&32)==0, (payload[6]&8)==0, (payload[6]&4)==0,
+                (payload[6]&2)==0, (payload[6]&1)!=0, (payload[7]&128)!=0,
+                (payload[6]&16)==0};
+            return true;
+        }
         case 20:
             return DecodeScalar<uint8_t>(payload, payload_length, knx_dpt20_decode, value);
         case 21:
@@ -614,9 +665,9 @@ bool KnxDecodeValue(const KnxDpt& dpt, const uint8_t* data, size_t length, KnxVa
     }
 }
 
-bool KnxEncodeValue(const KnxDpt& dpt, const KnxValue& value, std::vector<uint8_t>& data) {
-    const size_t offset = dpt.main <= 3 ? 0 : 1;
-    size_t wire_size = WireSize(dpt.main);
+static bool EncodeValueUnchecked(const KnxDpt& dpt, const KnxValue& value, std::vector<uint8_t>& data) {
+    const size_t offset = PayloadOffset(dpt);
+    size_t wire_size = WireSize(dpt);
     if (dpt.main == 24 || dpt.main == 28) {
         const auto* text = std::get_if<std::string>(&value);
         // One APDU byte plus the NUL-terminated text must fit the component telegram buffer.
@@ -629,6 +680,45 @@ bool KnxEncodeValue(const KnxDpt& dpt, const KnxValue& value, std::vector<uint8_
     data.assign(offset + wire_size, 0);
     uint8_t* payload = data.data() + offset;
     bool encoded = false;
+    if (std::holds_alternative<std::monostate>(value)) {
+        if (dpt.main==20) payload[0]=255;
+        else { payload[0]=0x7f; payload[1]=0xff; }
+        return true;
+    }
+    if (dpt.has_subtype) {
+        if (dpt.main==30) return knx_dpt31_encode(std::get<uint32_t>(value),payload,wire_size);
+        if (dpt.main==31) { payload[0]=std::get<uint8_t>(value); return true; }
+        if (dpt.main==234) {
+            const auto& text=std::get<std::string>(value);
+            for (unsigned i=0;i<2;++i) {
+                char c=text[i];
+                if (dpt.subtype==1 && c>='A' && c<='Z') c+='a'-'A';
+                if (dpt.subtype==2 && c>='a' && c<='z') c-='a'-'A';
+                payload[i]=static_cast<uint8_t>(c);
+            }
+            return true;
+        }
+        if (dpt.main==26) {
+            auto p=std::get<knx_dpt26_scene_info_t>(value); p.active=!p.active;
+            return knx_dpt26_encode(&p,payload,wire_size);
+        }
+        if (dpt.main==27) {
+            auto p=std::get<knx_dpt27_combined_status_t>(value); std::swap(p.value,p.mask);
+            return knx_dpt27_encode(&p,payload,wire_size);
+        }
+        if (dpt.main==9) {
+            double mantissa=std::get<float>(value)*100.0;
+            unsigned exponent=0;
+            while ((std::round(mantissa)<-2048 || std::round(mantissa)>2047) && exponent<15) {
+                mantissa/=2; ++exponent;
+            }
+            const int m=static_cast<int>(std::round(mantissa));
+            if (m<-2048 || m>2047 || (m==2047 && exponent==15)) return false;
+            payload[0]=(m<0 ? 0x80 : 0) | (exponent<<3) | ((m>>8)&7);
+            payload[1]=static_cast<uint8_t>(m);
+            return true;
+        }
+    }
     switch (dpt.main) {
         case 1:
             encoded = EncodeScalar<bool>(value, payload, wire_size, knx_dpt1_encode);
@@ -697,10 +787,17 @@ bool KnxEncodeValue(const KnxDpt& dpt, const KnxValue& value, std::vector<uint8_
             encoded = EncodeStruct<knx_dpt18_scene_control_t>(value, payload, wire_size,
                                                               knx_dpt18_encode);
             break;
-        case 19:
-            encoded =
-                EncodeStruct<knx_dpt19_datetime_t>(value, payload, wire_size, knx_dpt19_encode);
+        case 19: {
+            const auto& p=std::get<KnxDateTime>(value);
+            payload[0]=p.year; payload[1]=p.month; payload[2]=p.day;
+            payload[3]=(p.weekday<<5)|p.hour; payload[4]=p.minute; payload[5]=p.second;
+            payload[6]=(p.fault?128:0)|(p.working_day?64:0)|(!p.working_day_valid?32:0)|
+                (!p.year_valid?16:0)|(!p.date_valid?8:0)|(!p.weekday_valid?4:0)|
+                (!p.time_valid?2:0)|(p.daylight_saving_time?1:0);
+            payload[7]=p.clock_quality?128:0;
+            encoded=true;
             break;
+        }
         case 20:
             encoded = EncodeScalar<uint8_t>(value, payload, wire_size, knx_dpt20_encode);
             break;
@@ -766,4 +863,49 @@ bool KnxEncodeValue(const KnxDpt& dpt, const KnxValue& value, std::vector<uint8_
     if (!encoded)
         data.clear();
     return encoded;
+}
+bool KnxParseValue(const KnxDpt& dpt, const std::string& text, KnxValue& value) {
+    KnxValue parsed;
+    if (!KnxValidateDpt(dpt) || !ParseValueUnchecked(dpt,text,parsed) ||
+        !KnxValidateValue(dpt,parsed)) return false;
+    // Also check quantization cannot turn a numeric value into an invalid sentinel.
+    std::vector<uint8_t> encoded;
+    if (!KnxEncodeValue(dpt,parsed,encoded)) return false;
+    value=std::move(parsed);
+    return true;
+}
+
+bool KnxEncodeValue(const KnxDpt& dpt, const KnxValue& value, std::vector<uint8_t>& data) {
+    // Failure always clears encoded output, including early validation failures.
+    data.clear();
+    if (!KnxValidateValue(dpt,value) || !EncodeValueUnchecked(dpt,value,data)) {
+        data.clear(); return false;
+    }
+    return true;
+}
+
+bool KnxDecodeValue(const KnxDpt& dpt, const uint8_t* data, size_t length, KnxValue& value) {
+    if (!KnxValidateDpt(dpt) || !data || length==0 || length>255) return false;
+    const size_t offset=PayloadOffset(dpt);
+    if (length<=offset) return false;
+    const size_t size=length-offset;
+    const auto* p=data+offset;
+    if (dpt.main==24 || dpt.main==28) {
+        if (p[size-1]!=0 || std::memchr(p,0,size-1)) return false;
+    } else if (size!=WireSize(dpt)) return false;
+    if (dpt.main==16) {
+        bool ended=false;
+        for (size_t i=0;i<size;++i) {
+            if (ended && p[i]!=0) return false;
+            if (p[i]==0) ended=true;
+        }
+    }
+    if (dpt.has_subtype && ((dpt.main==9 && p[0]==0x7f && p[1]==0xff) ||
+        (dpt.main==8 && dpt.subtype==10 && p[0]==0x7f && p[1]==0xff) ||
+        (dpt.main==20 && dpt.subtype==1200 && p[0]==255))) return false;
+    KnxValue decoded;
+    if (!DecodeValueUnchecked(dpt,data,length,decoded) || !KnxValidateValue(dpt,decoded)) return false;
+    if (dpt.main==19 && std::get<KnxDateTime>(decoded).fault) return false;
+    value=std::move(decoded);
+    return true;
 }

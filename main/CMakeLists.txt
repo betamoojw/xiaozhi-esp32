@@ -49,6 +49,7 @@ if(CONFIG_XIAOZHI_KNX_IP)
     list(APPEND SOURCES
         "knx/knx_config.cc"
         "knx/knx_object.cc"
+        "knx/knx_validation.cc"
         "knx/knx_manager.cc"
         "knx/knx_mcp_tools.cc"
     )

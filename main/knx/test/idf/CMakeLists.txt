@@ -3,6 +3,7 @@ idf_component_register(
         "test_knx_configuration.cc"
         "../../knx_config.cc"
         "../../knx_object.cc"
+        "../../knx_validation.cc"
     INCLUDE_DIRS
         "../.."
         "../../.."
@@ -11,3 +12,4 @@ idf_component_register(
         json
         esp_knx_ip
 )
+target_compile_definitions(${COMPONENT_LIB} PRIVATE XIAOZHI_KNX_CONFIG_PARSER_ONLY)

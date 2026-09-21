@@ -344,7 +344,7 @@
             "name": "House Scene Select",
             "description": "Select the active house scene preset",
             "group_address": "8/0/1",
-            "datapoint_type": "DPT-3.001",
+            "datapoint_type": "DPT-17.001",
             "readable": false,
             "writable": true,
             "unit": null

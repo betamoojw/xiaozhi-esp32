@@ -292,9 +292,6 @@ bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
         error = "Invalid KNX root field 'physical_address'";
         return false;
     }
-    if (physical_address != nullptr) {
-        *physical_address = KnxFormatPhysicalAddress(parsed_physical_address_value);
-    }
     cJSON* objects_array = cJSON_GetObjectItemCaseSensitive(root, "communication_objects");
     if (!cJSON_IsArray(objects_array)) {
         cJSON_Delete(root);
@@ -346,7 +343,8 @@ bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
         } else if (!JsonString(item, "datapoint_type", datapoint_type, true, 16) ||
                    !KnxParseDpt(datapoint_type, object.datapoint_type) ||
                    KnxDptName(object.datapoint_type) != datapoint_type) {
-            error = ObjectFieldError(index, "datapoint_type");
+            error = ObjectFieldError(index, "datapoint_type") + ": object '" + object.id +
+                    "', '" + datapoint_type + "': expected a canonical supported DPT";
         } else if (!JsonBoolean(item, "readable", object.readable)) {
             error = ObjectFieldError(index, "readable");
         } else if (!JsonBoolean(item, "writable", object.writable)) {
@@ -387,6 +385,8 @@ bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
     if (!valid) {
         objects.clear();
         canonical_json.clear();
+    } else if (physical_address != nullptr) {
+        *physical_address = KnxFormatPhysicalAddress(parsed_physical_address_value);
     }
     return valid;
 }

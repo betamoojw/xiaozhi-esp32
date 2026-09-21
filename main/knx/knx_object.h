@@ -18,11 +18,21 @@ struct KnxDpt {
     }
 };
 
+// DPT 19 has independent year/date validity. The component combines those flags.
+// Keep the original 15 fields in their existing order for source compatibility.
+struct KnxDateTime {
+    uint8_t year, month, day, weekday, hour, minute, second;
+    bool fault, working_day, working_day_valid, date_valid, weekday_valid, time_valid;
+    bool daylight_saving_time, clock_quality;
+    bool year_valid = true;
+};
+
 using KnxValue = std::variant<bool, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, int64_t,
                               float, std::string, knx_dpt2_control_t, knx_dpt3_control_t,
                               knx_dpt10_time_t, knx_dpt11_date_t, knx_dpt18_scene_control_t,
-                              knx_dpt19_datetime_t, knx_dpt26_scene_info_t,
-                              knx_dpt27_combined_status_t, knx_dpt232_color_t, knx_dpt251_color_t>;
+                              KnxDateTime, knx_dpt26_scene_info_t,
+                              knx_dpt27_combined_status_t, knx_dpt232_color_t, knx_dpt251_color_t,
+                              std::monostate>;
 
 struct KnxCommunicationObject {
     std::string id;
@@ -44,6 +54,9 @@ std::string KnxFormatGroupAddress(knx_address_t address);
 bool KnxParsePhysicalAddress(const std::string& text, knx_address_t& address);
 std::string KnxFormatPhysicalAddress(knx_address_t address);
 bool KnxParseDpt(const std::string& text, KnxDpt& datapoint_type);
+bool KnxValidateDpt(const KnxDpt& datapoint_type);
+bool KnxValidateValue(const KnxDpt& datapoint_type, const KnxValue& value,
+                      std::string* error = nullptr);
 std::string KnxDptName(const KnxDpt& datapoint_type);
 bool KnxParseValue(const KnxDpt& datapoint_type, const std::string& text, KnxValue& value);
 std::string KnxValueToString(const KnxValue& value);

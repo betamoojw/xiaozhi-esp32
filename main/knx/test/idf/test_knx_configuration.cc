@@ -225,3 +225,34 @@ TEST_CASE("KNX configuration preserves unit field from new format", "[knx][confi
     TEST_ASSERT_TRUE(objects[0].unit.empty());   // null in JSON
     TEST_ASSERT_EQUAL_STRING("°C", objects[2].unit.c_str());
 }
+
+TEST_CASE("KNX rejects unknown subtypes and accepts four digit subtypes", "[knx][configuration]") {
+    for (const auto* name : {"DPT-1.999", "DPT-3.001", "DPT-7.010", "DPT-20.1000"}) {
+        std::string json = kValidConfigurationNewFormat;
+        json.replace(json.find("DPT-1.001"), 9, name);
+        std::vector<KnxCommunicationObject> objects;
+        std::string error, canonical, address;
+        TEST_ASSERT_FALSE(KnxParseConfiguration(json,8,8,objects,canonical,error,&address));
+        TEST_ASSERT_TRUE(objects.empty());
+        TEST_ASSERT_TRUE(canonical.empty());
+        TEST_ASSERT_TRUE(address.empty());
+    }
+    KnxDpt dpt;
+    TEST_ASSERT_TRUE(KnxParseDpt("DPT-30.1010",dpt));
+    KnxValue value;
+    TEST_ASSERT_TRUE(KnxParseValue(dpt,"16777215",value));
+    std::vector<uint8_t> bytes;
+    TEST_ASSERT_TRUE(KnxEncodeValue(dpt,value,bytes));
+    TEST_ASSERT_EQUAL(4,bytes.size());
+    TEST_ASSERT_FALSE(KnxParseValue(dpt,"16777216",value));
+}
+
+TEST_CASE("KNX subtype validation protects decoded outputs", "[knx][datapoint]") {
+    KnxValue value = uint8_t{3};
+    const uint8_t reserved[] = {0,5};
+    TEST_ASSERT_FALSE(KnxDecodeValue({20,102,true},reserved,sizeof(reserved),value));
+    TEST_ASSERT_EQUAL(3,std::get<uint8_t>(value));
+    const uint8_t invalid[] = {0,0x7f,0xff};
+    TEST_ASSERT_FALSE(KnxDecodeValue({9,1,true},invalid,sizeof(invalid),value));
+    TEST_ASSERT_EQUAL(3,std::get<uint8_t>(value));
+}

@@ -35,10 +35,10 @@ void TestDptSelectionAndValues() {
     assert(!KnxParseDpt("DPT-32.001", datapoint_type));
     assert(!KnxParseDpt("DPT-5.", datapoint_type));
     for (uint16_t family = 1; family <= 31; ++family) {
-        assert(KnxParseDpt("DPT-" + std::to_string(family) + ".001", datapoint_type));
+        assert(KnxParseDpt("DPT-" + std::to_string(family), datapoint_type));
     }
     for (uint16_t family : {232, 234, 251}) {
-        assert(KnxParseDpt("DPT-" + std::to_string(family) + ".001", datapoint_type));
+        assert(KnxParseDpt("DPT-" + std::to_string(family), datapoint_type));
     }
 
     KnxValue value;
@@ -91,7 +91,7 @@ void TestRoundTrips() {
     CheckRoundTrip(KnxDpt{16}, KnxValue(std::string("KNX text")));
     CheckRoundTrip(KnxDpt{17}, KnxValue(uint8_t{42}));
     CheckRoundTrip(KnxDpt{18}, KnxValue(knx_dpt18_scene_control_t{true, 12}));
-    CheckRoundTrip(KnxDpt{19}, KnxValue(knx_dpt19_datetime_t{126, 9, 12, 6, 14, 30, 15, false, true,
+    CheckRoundTrip(KnxDpt{19}, KnxValue(KnxDateTime{126, 9, 12, 6, 14, 30, 15, false, true,
                                                              true, true, true, true, false, true}));
     CheckRoundTrip(KnxDpt{20}, KnxValue(uint8_t{7}));
     CheckRoundTrip(KnxDpt{21}, KnxValue(uint8_t{0xa5}));
@@ -120,7 +120,10 @@ void TestRoundTrips() {
 
 }  // namespace
 
+void TestSubtypeValidation();
+
 int main() {
+    TestSubtypeValidation();
     TestAddresses();
     TestDptSelectionAndValues();
     TestRoundTrips();

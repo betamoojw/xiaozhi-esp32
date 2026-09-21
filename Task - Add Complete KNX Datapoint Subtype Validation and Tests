@@ -1,0 +1,129 @@
+Work in E:\AI\xiaozhi-esp32. Review and understand main/knx, then implement comprehensive KNX datapoint subtype validation with unit and integration tests. Complete the implementation and available verification; do not stop at analysis or a plan.
+
+Follow AGENTS.md and preserve unrelated worktree changes. Use ESP-IDF 6.1 when available, minimum 6.0.1; do not use IDF 5.x. Do not manually edit generated files, sdkconfig*, components/, or managed_components/.
+
+1. Review the existing implementation
+
+Read:
+- main/knx/knx_object.{h,cc}
+- main/knx/knx_config.{h,cc}
+- main/knx/knx_manager.{h,cc}
+- main/knx/knx_mcp_tools.{h,cc}
+- main/knx/README.md
+- All files under main/knx/test
+- docs/knx_ip_integration.md
+- docs/knx_ip_configuration.md
+- docs/knx_ip_mcp.md
+- Relevant Kconfig/CMake integration and the installed esp_knx_ip codec implementation, read-only.
+
+Trace configuration import/load, object registration, MCP writes, encoding, incoming telegram decoding, and cache updates.
+
+Current behavior to investigate:
+- KnxParseDpt accepts supported main families with arbitrary numeric subtypes.
+- Supported families are 1–31, 232, 234, and 251.
+- Subtype-specific codec selection currently exists for 4.001, 5.001, and 5.003.
+- Some tests assume every supported family accepts subtype .001. Replace such assumptions with verified subtype cases.
+
+2. Establish authoritative subtype rules
+
+Use authoritative KNX Association datapoint documentation. Record the exact document version, source URL, and relevant sections in repository documentation.
+
+Cover every standardized subtype within the currently supported families. Do not expand into unrelated DPT families.
+
+Create an auditable coverage matrix containing:
+- Main type and subtype.
+- Name, representation, units, and scaling.
+- Valid ranges or enumerated values.
+- Reserved bits/values and special or invalid-value encodings.
+- String encoding/length requirements.
+- Structured-field constraints and validity-flag semantics.
+- Implementation and test coverage.
+
+Distinguish wire representability from subtype semantic validity. Do not invent restrictions from names or units, assume subtype numbers are contiguous, or treat all enumeration values as valid.
+
+If authoritative details are unavailable, identify the exact gap and explicitly document unsupported behavior. Do not silently fall back to generic family validation or claim complete coverage.
+
+3. Implement consistent validation
+
+Keep validation in the narrowest appropriate KNX layer. Prefer a shared, maintainable subtype registry and validation helpers over duplicated checks.
+
+Validate:
+- DPT identifiers and valid main/subtype combinations.
+- Parsed textual values.
+- Direct KnxValue inputs to encoding.
+- Incoming wire data before publishing decoded values.
+- Configuration and direct object-registration paths.
+
+Ensure callers cannot bypass validation by constructing KnxDpt directly.
+
+Preserve existing main-only DPT behavior where feasible, and document its generic/raw semantics. Distinguish omitted subtypes from explicit .000; accept .000 only where the standard defines it.
+
+Apply subtype-specific constraints, including numeric limits, scaling, enumerations, bitfields, strings, dates/times, scenes, and composite values as applicable. Respect standardized sentinels and validity flags. Verify receive-side reserved-bit handling against the standard instead of universally rejecting or ignoring reserved bits.
+
+Reject invalid values before codecs can silently truncate, clamp, mask, or otherwise normalize them. Preserve legitimate codec quantization with documented tolerances.
+
+Inspect APDU offsets and payload lengths carefully. Enforce the actual component contract, including malformed/truncated/oversized payload handling.
+
+Define consistent failure behavior for output arguments. Invalid incoming values must not overwrite an object's last valid value, validity state, or last-update timestamp. Invalid writes must not send telegrams. Invalid configuration imports must not replace active or persisted configuration.
+
+Provide useful errors at configuration and MCP boundaries, including object identity, DPT, and violated constraint where practical.
+
+Preserve thread safety, asynchronous transport behavior, cJSON ownership, and bounded memory use. Avoid broad architectural changes.
+
+4. Add meaningful unit tests
+
+Extend main/knx/test/test_knx_object.cc and test_knx_config.cc and their CMake setup as needed.
+
+Use table-driven coverage for every supported subtype, with independently sourced expected results rather than expectations derived solely from production metadata.
+
+Cover:
+- Valid and unknown main/subtype combinations, malformed identifiers, normalization, omitted subtype, and explicit .000.
+- Representative valid values and applicable lower/upper boundaries.
+- Out-of-range values, enum holes, reserved patterns, and wrong variant alternatives.
+- NaN/infinity, overflow, malformed numeric text, and trailing data.
+- String lengths, encodings, and embedded NUL behavior.
+- Structured fields, calendar rules, and validity flags where applicable.
+- Null, empty, truncated, and oversized wire payloads.
+- Failure output behavior.
+- Known-byte encode/decode vectors and round trips with justified quantization tolerances.
+- Generic main-only compatibility.
+
+Ensure test assertions actually execute in the chosen build configuration; existing tests use assert(), which can be disabled by NDEBUG.
+
+5. Add integration tests
+
+Exercise real module paths with the real codec and narrowly scoped transport/storage/platform fakes where needed. Do not label codec round trips alone as manager integration tests.
+
+Cover:
+- Configuration import/load → subtype validation → registry.
+- MCP/manager writes → validation → encoding → captured transport send.
+- Invalid writes producing no send.
+- Received telegram → decode/validation → cache update.
+- Invalid received values preserving cached object state.
+- Invalid imports preserving active and persisted configuration.
+- Valid subtype and value behavior surviving serialization/reload.
+- Errors propagated through relevant MCP entry points.
+
+Extend ESP-IDF Unity tests under main/knx/test/idf where appropriate. Keep host integration tests deterministic and independent of a physical KNX bus. Introduce only minimal test seams and exercise production code.
+
+6. Verify and document
+
+Run:
+- KNX host builds and CTest.
+- python -m unittest discover -s scripts/tests -v
+- clang-format on touched C/C++ files and its dry-run check.
+- Representative affected firmware builds using scripts/build.py with an SDK version verified before building.
+- Available ESP-IDF Unity tests.
+
+Use separate build directories where appropriate. Record unavailable tooling or hardware honestly; do not claim unexecuted tests passed.
+
+Update KNX documentation with supported subtype coverage, validation rules, main-only behavior, compatibility changes, reference sources, and reproducible test commands.
+
+Final report:
+- Review findings and concrete changes.
+- Subtype coverage and any remaining gaps.
+- Tests/builds executed and results.
+- Compatibility implications.
+- Physical KNX hardware checks still required.
+
+A successful build is not hardware validation.

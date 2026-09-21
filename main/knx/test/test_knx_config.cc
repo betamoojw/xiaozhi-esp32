@@ -215,9 +215,11 @@ void TestObjectFieldValidation() {
     std::string error;
     std::string configuration = kValidConfigurationNewFormat;
 
-    configuration.replace(configuration.find("DPT-1.001"), 9, "DPT-1");
+    configuration.replace(configuration.find("DPT-1.001"), 9, "DPT-1.999");
     assert(!KnxParseConfiguration(configuration, 8, 8, objects, canonical_json, error));
-    assert(error == "Invalid KNX communication object 0 field 'datapoint_type'");
+    assert(error.find("datapoint_type") != std::string::npos);
+    assert(error.find("test_switch_command") != std::string::npos);
+    assert(error.find("DPT-1.999") != std::string::npos);
 
     configuration = kValidConfigurationNewFormat;
     configuration.replace(configuration.find("1/0/1"), 5, "32/0/1");

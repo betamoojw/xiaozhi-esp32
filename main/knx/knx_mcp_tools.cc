@@ -15,7 +15,9 @@ void AddValue(cJSON* json, const KnxValue& value) {
     std::visit(
         [json](const auto& item) {
             using Type = std::decay_t<decltype(item)>;
-            if constexpr (std::is_same_v<Type, bool>) {
+            if constexpr (std::is_same_v<Type, std::monostate>) {
+                cJSON_AddNullToObject(json, "value");
+            } else if constexpr (std::is_same_v<Type, bool>) {
                 cJSON_AddBoolToObject(json, "value", item);
             } else if constexpr (std::is_same_v<Type, int64_t>) {
                 cJSON_AddStringToObject(json, "value", std::to_string(item).c_str());
@@ -43,7 +45,7 @@ void AddValue(cJSON* json, const KnxValue& value) {
                 } else if constexpr (std::is_same_v<Type, knx_dpt18_scene_control_t>) {
                     cJSON_AddBoolToObject(object, "learn", item.learn);
                     cJSON_AddNumberToObject(object, "scene_number", item.scene_number);
-                } else if constexpr (std::is_same_v<Type, knx_dpt19_datetime_t>) {
+                } else if constexpr (std::is_same_v<Type, KnxDateTime>) {
                     cJSON_AddNumberToObject(object, "year", item.year);
                     cJSON_AddNumberToObject(object, "month", item.month);
                     cJSON_AddNumberToObject(object, "day", item.day);
@@ -60,6 +62,7 @@ void AddValue(cJSON* json, const KnxValue& value) {
                     cJSON_AddBoolToObject(object, "daylight_saving_time",
                                           item.daylight_saving_time);
                     cJSON_AddBoolToObject(object, "clock_quality", item.clock_quality);
+                    cJSON_AddBoolToObject(object, "year_valid", item.year_valid);
                 } else if constexpr (std::is_same_v<Type, knx_dpt26_scene_info_t>) {
                     cJSON_AddBoolToObject(object, "active", item.active);
                     cJSON_AddNumberToObject(object, "scene_number", item.scene_number);
