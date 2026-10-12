@@ -8,7 +8,7 @@
     "nat": false
   },
   "physical_address": "15.15.199",
-  "communication_objects": [
+  "comObjects": [
     {
       "id": "switch_living_room",
       "name": "Living Room Light Switch",

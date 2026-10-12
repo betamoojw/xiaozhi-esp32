@@ -8,7 +8,7 @@
         "nat": false
     },
     "physical_address": "15.15.200",
-    "communication_objects": [
+    "comObjects": [
         {
             "id": "wled_knx_ip_power_write",
             "name": "WLED Power",

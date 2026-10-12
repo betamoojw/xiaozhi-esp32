@@ -47,7 +47,7 @@ constexpr char kValidConfigurationNewFormat[] = R"json({
     "nat": false
   },
   "physical_address": "15.15.199",
-  "communication_objects": [
+  "comObjects": [
     {
       "id": "test_switch_command",
       "name": "Test Switch Command",
@@ -176,16 +176,16 @@ TEST_CASE("KNX configuration accepts an empty registry", "[knx][configuration]")
       "media_type":"knx_ip",
       "media_parameters":{"multicast_address":"224.0.23.12","udp_port":3671,"transport_mode":"routing","interface_identifier":"KNX-IP-Interface","nat":false},
       "physical_address":"15.15.199",
-      "communication_objects":[]
+      "comObjects":[]
     })json";
     TEST_ASSERT_TRUE(KnxParseConfiguration(kEmptyConfiguration, 8, 8, objects, canonical_json,
                                             error));
     TEST_ASSERT_TRUE(objects.empty());
     TEST_ASSERT_NOT_EQUAL(std::string::npos,
-                canonical_json.find("\"communication_objects\":[]"));
+                canonical_json.find("\"comObjects\":[]"));
 }
 
-TEST_CASE("KNX configuration accepts new format with communication_objects",
+TEST_CASE("KNX configuration accepts new format with comObjects",
           "[knx][configuration]") {
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
@@ -203,7 +203,7 @@ TEST_CASE("KNX configuration accepts new format with communication_objects",
     TEST_ASSERT_FALSE(canonical_json.empty());
 }
 
-TEST_CASE("KNX configuration rejects new format without communication_objects",
+TEST_CASE("KNX configuration rejects new format without comObjects",
           "[knx][configuration]") {
     constexpr char kInvalidNewFormat[] = R"json({
       "media_type": "knx_ip",

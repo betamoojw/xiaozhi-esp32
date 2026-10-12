@@ -8,7 +8,7 @@
         "nat": false
     },
     "physical_address": "15.15.199",
-    "communication_objects": [
+    "comObjects": [
         {
             "id": "living_room_light_command",
             "name": "Living Room Light Command",

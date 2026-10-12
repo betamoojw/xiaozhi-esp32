@@ -13,13 +13,13 @@ constexpr char kTag[] = "KNX_MGR";
 
 namespace {
 
-std::string RootConfiguration(const std::string& communication_objects) {
+std::string RootConfiguration(const std::string& comObjects) {
     return std::string(R"json({"media_type":"knx_ip","media_parameters":{"multicast_address":")json") +
            CONFIG_XIAOZHI_KNX_IP_MULTICAST_ADDRESS +
            R"json(","udp_port":)json" + std::to_string(CONFIG_XIAOZHI_KNX_IP_UDP_PORT) +
            R"json(,"transport_mode":"routing","interface_identifier":"KNX-IP-Interface","nat":false},"physical_address":")json" +
            CONFIG_XIAOZHI_KNX_IP_PHYSICAL_ADDRESS +
-           R"json(","communication_objects":)json" + communication_objects + "}";
+           R"json(","comObjects":)json" + comObjects + "}";
 }
 
 }  // namespace

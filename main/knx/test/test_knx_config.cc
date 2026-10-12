@@ -50,7 +50,7 @@ constexpr char kValidConfigurationNewFormat[] = R"json({
         "nat": false
     },
     "physical_address": "15.15.199",
-    "communication_objects": [
+    "comObjects": [
         {
             "id": "test_switch_command",
             "name": "Test Switch Command",
@@ -148,14 +148,14 @@ void TestEmptyRegistry() {
         "media_type":"knx_ip",
         "media_parameters":{"multicast_address":"224.0.23.12","udp_port":3671,"transport_mode":"routing","interface_identifier":"KNX-IP-Interface","nat":false},
         "physical_address":"15.15.199",
-        "communication_objects":[]
+        "comObjects":[]
     })json";
     std::vector<KnxCommunicationObject> objects;
     std::string canonical_json;
     std::string error;
     assert(KnxParseConfiguration(kEmptyConfiguration, 8, 8, objects, canonical_json, error));
     assert(objects.empty());
-    assert(canonical_json.find("\"communication_objects\":[]") != std::string::npos);
+    assert(canonical_json.find("\"comObjects\":[]") != std::string::npos);
 }
 
 void TestNewFormatConfiguration() {
@@ -246,7 +246,7 @@ void TestProductionConfigurationModel() {
         }
     }
     assert(configured_families == expected_families);
-    assert(canonical_json.find("\"communication_objects\"") != std::string::npos);
+    assert(canonical_json.find("\"comObjects\"") != std::string::npos);
 }
 
 }  // namespace

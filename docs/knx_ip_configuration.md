@@ -62,7 +62,7 @@ The root object contains KNX/IP media parameters, physical address, and communic
     "nat": false
   },
   "physical_address": "15.15.199",
-  "communication_objects": [
+  "comObjects": [
     {
       "id": "site_unique_id",
       "name": "Human-readable semantic name",
@@ -129,11 +129,11 @@ Example MCP arguments using the test switch command:
 
 ```json
 {
-  "configuration": "{\"media_type\":\"knx_ip\",\"media_parameters\":{\"multicast_address\":\"224.0.23.12\",\"udp_port\":3671,\"transport_mode\":\"routing\",\"interface_identifier\":\"KNX-IP-Interface\",\"nat\":false},\"physical_address\":\"15.15.199\",\"communication_objects\":[{\"id\":\"test_switch_command\",\"name\":\"Test Switch Command\",\"description\":\"Generic commissioning object\",\"group_address\":\"1/0/1\",\"datapoint_type\":\"DPT-1.001\",\"readable\":false,\"writable\":true}]}"
+  "configuration": "{\"media_type\":\"knx_ip\",\"media_parameters\":{\"multicast_address\":\"224.0.23.12\",\"udp_port\":3671,\"transport_mode\":\"routing\",\"interface_identifier\":\"KNX-IP-Interface\",\"nat\":false},\"physical_address\":\"15.15.199\",\"comObjects\":[{\"id\":\"test_switch_command\",\"name\":\"Test Switch Command\",\"description\":\"Generic commissioning object\",\"group_address\":\"1/0/1\",\"datapoint_type\":\"DPT-1.001\",\"readable\":false,\"writable\":true}]}"
 }
 ```
 
-Import a root object whose `communication_objects` is `[]` to persist an empty registry and
+Import a root object whose `comObjects` is `[]` to persist an empty registry and
 remove all configured callbacks.
 The import tool is deliberately user-only so the AI model cannot rewrite its
 own KNX authorization boundary.

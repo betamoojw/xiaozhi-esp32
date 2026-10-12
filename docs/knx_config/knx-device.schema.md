@@ -4,9 +4,9 @@
 
 This schema represents a KNX device and its communication objects in JSON. It separates:
 
-- **Common device properties**: `media_type`, `media_parameters`, `physical_address`, and `communication_objects`.
+- **Common device properties**: `media_type`, `media_parameters`, `physical_address`, and `comObjects`.
 - **Media-specific configuration**: `media_parameters`.
-- **Communication-object metadata and state**: the objects in `communication_objects`.
+- **Communication-object metadata and state**: the objects in `comObjects`.
 
 The schema uses **JSON Schema Draft 2020-12** and is intended to work with standard JSON Schema validators.
 
@@ -27,7 +27,7 @@ A device has four required properties:
 | `media_type` | string | yes | Selects the KNX communication medium. |
 | `media_parameters` | object | yes | Parameters associated with the selected medium. |
 | `physical_address` | string | yes | KNX individual/physical address. |
-| `communication_objects` | array | yes | Communication objects exposed by the device. |
+| `comObjects` | array | yes | Communication objects exposed by the device. |
 
 The schema currently recognizes `knx_tp`, `knx_ip`, and `knx_rf`.
 
@@ -207,7 +207,7 @@ Applications that require a closed DPT catalogue should validate the identifier 
 | `media_type` | string | One of `knx_tp`, `knx_ip`, `knx_rf`. |
 | `media_parameters` | object | Shape is selected by `media_type`. |
 | `physical_address` | string | `area.line.device`, ranges 0–15/0–15/0–255. |
-| `communication_objects` | array | Each item is a communication object. |
+| `comObjects` | array | Each item is a communication object. |
 | `id` | string | 1–128 chars; restricted identifier pattern. |
 | `name` | string | 1–256 chars. |
 | `description` | string | max 2000 chars. |
@@ -350,7 +350,7 @@ Therefore, this rule requires an application-level semantic check:
 
 ```text
 for every pair of communication objects i != j:
-    communication_objects[i].id != communication_objects[j].id
+    comObjects[i].id != comObjects[j].id
 ```
 
 `uniqueItems: true` is also present, but that only prevents two entire array items from being identical; it does not, by itself, guarantee unique `id` values.
@@ -410,7 +410,7 @@ The schema `$id` should be changed to the organization's stable schema URI. If b
 
 The following rules are documented separately because expressing them generically would either require an enormous DPT-specific schema or application-specific knowledge:
 
-1. `communication_objects[*].id` values must be unique within the array.
+1. `comObjects[*].id` values must be unique within the array.
 2. `current_value` must semantically match `datapoint_type`.
 3. `current_value` must satisfy the numeric/range/enum constraints of the selected DPT.
 4. `rf_domain_address`, RF channel semantics, and some KNX RF profile rules depend on the RF profile and implementation.

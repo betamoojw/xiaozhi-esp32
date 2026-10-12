@@ -20,7 +20,7 @@ std::map<std::string, std::unique_ptr<McpTool>> tools;
 std::string Configuration(const std::string& dpt = "DPT-20.102",
                           const std::string& address = "1.1.1") {
     return R"({"media_type":"knx_ip","media_parameters":{"multicast_address":"224.0.23.12","udp_port":3671,"transport_mode":"routing","interface_identifier":"test","nat":false},"physical_address":")" +
-        address + R"(","communication_objects":[{"id":"mode","name":"Mode","group_address":"1/0/1","datapoint_type":")" +
+        address + R"(","comObjects":[{"id":"mode","name":"Mode","group_address":"1/0/1","datapoint_type":")" +
         dpt + R"(","readable":true,"writable":true}]})";
 }
 

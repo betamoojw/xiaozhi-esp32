@@ -8,7 +8,7 @@
     "media_type",
     "media_parameters",
     "physical_address",
-    "communication_objects"
+    "comObjects"
   ],
   "properties": {
     "media_type": {
@@ -42,7 +42,7 @@
     "physical_address": {
       "$ref": "#/$defs/physicalAddress"
     },
-    "communication_objects": {
+    "comObjects": {
       "type": "array",
       "description": "Communication objects exposed by the device.",
       "items": {

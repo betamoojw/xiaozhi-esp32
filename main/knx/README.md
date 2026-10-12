@@ -44,7 +44,7 @@ The new format is an object with media parameters, physical address, and communi
         "nat": false
     },
     "physical_address": "15.15.199",
-    "communication_objects": [
+    "comObjects": [
         {
             "id": "light_status",
             "name": "Light Status",

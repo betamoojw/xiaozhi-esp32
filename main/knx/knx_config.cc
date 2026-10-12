@@ -292,10 +292,10 @@ bool KnxParseConfiguration(const std::string& json_text, size_t maximum_objects,
         error = "Invalid KNX root field 'physical_address'";
         return false;
     }
-    cJSON* objects_array = cJSON_GetObjectItemCaseSensitive(root, "communication_objects");
+    cJSON* objects_array = cJSON_GetObjectItemCaseSensitive(root, "comObjects");
     if (!cJSON_IsArray(objects_array)) {
         cJSON_Delete(root);
-        error = "Invalid KNX root field 'communication_objects': expected an array";
+        error = "Invalid KNX root field 'comObjects': expected an array";
         return false;
     }
 

@@ -11,7 +11,7 @@ Create a JSON schema that represents a KNX device with, at minimum, the followin
 * `media_type` — the KNX communication medium.
 * `media_parameters` — parameters specific to the selected media type.
 * `physical_address` — the KNX physical address of the device.
-* `communication_objects` — an array containing the device's KNX communication objects.
+* `comObjects` — an array containing the device's KNX communication objects.
 
 The schema must support at least these KNX media types:
 
@@ -59,7 +59,7 @@ The schema should:
 
 ### 4. KNX Communication Objects
 
-The device must contain a `communication_objects` array.
+The device must contain a `comObjects` array.
 
 Each communication object must contain **at least** the following fields:
 
@@ -200,7 +200,7 @@ The implementation is considered complete when:
 * [ ] `knx_tp`, `knx_ip`, and `knx_rf` are supported.
 * [ ] Media-specific parameters are represented separately from common device properties.
 * [ ] A KNX physical address is represented and validated.
-* [ ] `communication_objects` is an array.
+* [ ] `comObjects` is an array.
 * [ ] Every communication object supports all required fields listed above.
 * [ ] The `unit` field is optional and can be null or a string with max 32 characters.
 * [ ] Group addresses and physical addresses have defined validation rules.
