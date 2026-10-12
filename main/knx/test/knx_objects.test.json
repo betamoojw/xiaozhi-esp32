@@ -1,0 +1,29 @@
+[
+  {
+    "id": "test_switch_command",
+    "name": "Test Switch Command",
+    "description": "Generic writable boolean used for KNX integration testing",
+    "group_address": "1/0/1",
+    "datapoint_type": "DPT-1.001",
+    "readable": false,
+    "writable": true
+  },
+  {
+    "id": "test_switch_status",
+    "name": "Test Switch Status",
+    "description": "Generic boolean feedback used for KNX integration testing",
+    "group_address": "1/0/2",
+    "datapoint_type": "DPT-1.001",
+    "readable": true,
+    "writable": false
+  },
+  {
+    "id": "test_temperature",
+    "name": "Test Temperature",
+    "description": "Generic two-byte floating-point sensor used for KNX integration testing",
+    "group_address": "2/0/1",
+    "datapoint_type": "DPT-9.001",
+    "readable": true,
+    "writable": false
+  }
+]

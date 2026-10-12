@@ -1,3 +1,11 @@
+# ✨ 更多自定义功能
+
+## 无需 Home Assistant 的 KNXnet/IP 支持
+
+将 KNXnet/IP 直接集成到 Xiaozhi ESP32 固件中，无需依赖 HA（例如 Home Assistant），打造独立运行的智能家居语音助手
+
+![Smart 86 Panel XiaozhiAI KNX IP](docs/knx_config/Smart%2086%20Panel%20XiaozhiAI%20KNX%20IP.png)
+
 # An MCP-based Chatbot
 
 （中文 | [English](README.md) | [日本語](README_ja.md)）
