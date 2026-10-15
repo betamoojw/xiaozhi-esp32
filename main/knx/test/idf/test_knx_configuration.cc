@@ -1,0 +1,258 @@
+#include "knx_config.h"
+
+#include <unity.h>
+
+#include <string>
+#include <vector>
+
+namespace {
+
+constexpr char kValidConfiguration[] = R"json([
+  {
+    "id": "test_switch_command",
+    "name": "Test Switch Command",
+    "description": "Generic writable boolean used for KNX integration testing",
+    "group_address": "1/0/1",
+    "datapoint_type": "DPT-1.001",
+    "readable": false,
+    "writable": true
+  },
+  {
+    "id": "test_switch_status",
+    "name": "Test Switch Status",
+    "description": "Generic boolean feedback used for KNX integration testing",
+    "group_address": "1/0/2",
+    "datapoint_type": "DPT-1.001",
+    "readable": true,
+    "writable": false
+  },
+  {
+    "id": "test_temperature",
+    "name": "Test Temperature",
+    "description": "Generic two-byte floating-point sensor used for KNX integration testing",
+    "group_address": "2/0/1",
+    "datapoint_type": "DPT-9.001",
+    "readable": true,
+    "writable": false
+  }
+])json";
+
+constexpr char kValidConfigurationNewFormat[] = R"json({
+  "media_type": "knx_ip",
+  "media_parameters": {
+    "multicast_address": "224.0.23.12",
+    "udp_port": 3671,
+    "transport_mode": "routing",
+    "interface_identifier": "KNX-IP-Interface",
+    "nat": false
+  },
+  "physical_address": "15.15.199",
+  "comObjects": [
+    {
+      "id": "test_switch_command",
+      "name": "Test Switch Command",
+      "description": "Generic writable boolean used for KNX integration testing",
+      "group_address": "1/0/1",
+      "datapoint_type": "DPT-1.001",
+      "readable": false,
+      "writable": true,
+      "unit": null
+    },
+    {
+      "id": "test_switch_status",
+      "name": "Test Switch Status",
+      "description": "Generic boolean feedback used for KNX integration testing",
+      "group_address": "1/0/2",
+      "datapoint_type": "DPT-1.001",
+      "readable": true,
+      "writable": false,
+      "unit": null
+    },
+    {
+      "id": "test_temperature",
+      "name": "Test Temperature",
+      "description": "Generic two-byte floating-point sensor used for KNX integration testing",
+      "group_address": "2/0/1",
+      "datapoint_type": "DPT-9.001",
+      "readable": true,
+      "writable": false,
+      "unit": "°C"
+    }
+  ]
+})json";
+
+bool Parse(const std::string& json, size_t maximum_objects,
+           std::vector<KnxCommunicationObject>& objects, std::string& error) {
+    std::string canonical_json;
+    return KnxParseConfiguration(json, maximum_objects, maximum_objects, objects, canonical_json,
+                                 error);
+}
+
+}  // namespace
+
+TEST_CASE("KNX configuration accepts a valid registry", "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+    std::string error;
+    TEST_ASSERT_TRUE(
+        KnxParseConfiguration(kValidConfigurationNewFormat, 8, 8, objects, canonical_json, error));
+    TEST_ASSERT_EQUAL(3, objects.size());
+    TEST_ASSERT_EQUAL_STRING("test_switch_command", objects[0].id.c_str());
+    TEST_ASSERT_FALSE(objects[0].readable);
+    TEST_ASSERT_TRUE(objects[0].writable);
+    TEST_ASSERT_EQUAL_STRING("test_temperature", objects[2].id.c_str());
+    TEST_ASSERT_EQUAL(9, objects[2].datapoint_type.main);
+    TEST_ASSERT_EQUAL(1, objects[2].datapoint_type.subtype);
+    TEST_ASSERT_TRUE(objects[2].datapoint_type.has_subtype);
+    TEST_ASSERT_EQUAL_STRING("DPT-9.001", KnxDptName(objects[2].datapoint_type).c_str());
+    TEST_ASSERT_FALSE(canonical_json.empty());
+}
+
+TEST_CASE("KNX configuration rejects malformed JSON", "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string error;
+    TEST_ASSERT_FALSE(Parse("[{", 8, objects, error));
+}
+
+TEST_CASE("KNX configuration accepts component DPTs and rejects unknown families",
+          "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string error;
+    std::string json = kValidConfigurationNewFormat;
+    json.replace(json.find("DPT-1.001"), 9, "DPT-17.001");
+    TEST_ASSERT_TRUE(Parse(json, 8, objects, error));
+    json.replace(json.find("DPT-17.001"), 10, "DPT-32.001");
+    TEST_ASSERT_FALSE(Parse(json, 8, objects, error));
+}
+
+TEST_CASE("KNX configuration rejects invalid and duplicate addresses", "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string error;
+    std::string invalid = kValidConfigurationNewFormat;
+    invalid.replace(invalid.find("1/0/1"), 5, "32/0/1");
+    TEST_ASSERT_FALSE(Parse(invalid, 8, objects, error));
+
+    std::string duplicate = kValidConfigurationNewFormat;
+    duplicate.replace(duplicate.find("2/0/1"), 5, "1/0/1");
+    TEST_ASSERT_FALSE(Parse(duplicate, 8, objects, error));
+}
+
+TEST_CASE("KNX configuration rejects duplicate IDs and invalid permissions",
+          "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string error;
+    std::string duplicate = kValidConfigurationNewFormat;
+    duplicate.replace(duplicate.find("test_switch_status"), 18, "test_switch_command");
+    TEST_ASSERT_FALSE(Parse(duplicate, 8, objects, error));
+
+    constexpr char kNoPermissions[] = R"json([{
+      "id":"disabled",
+      "name":"Disabled",
+      "group_address":"1/0/1",
+      "datapoint_type":"DPT-1",
+      "readable":false,
+      "writable":false
+    }])json";
+    TEST_ASSERT_FALSE(Parse(kNoPermissions, 8, objects, error));
+}
+
+TEST_CASE("KNX configuration enforces object limits", "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string error;
+    TEST_ASSERT_FALSE(Parse(kValidConfigurationNewFormat, 1, objects, error));
+}
+
+TEST_CASE("KNX configuration uses LittleFS runtime paths", "[knx][configuration]") {
+    TEST_ASSERT_EQUAL_STRING("/littlefs/interfaces/knxConfig.json", kKnxRuntimeConfigurationPath);
+    TEST_ASSERT_EQUAL_STRING("/littlefs/interfaces/knxConfig.json.tmp",
+                             kKnxRuntimeConfigurationUploadPath);
+}
+
+TEST_CASE("KNX configuration accepts an empty registry", "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+    std::string error;
+    constexpr char kEmptyConfiguration[] = R"json({
+      "media_type":"knx_ip",
+      "media_parameters":{"multicast_address":"224.0.23.12","udp_port":3671,"transport_mode":"routing","interface_identifier":"KNX-IP-Interface","nat":false},
+      "physical_address":"15.15.199",
+      "comObjects":[]
+    })json";
+    TEST_ASSERT_TRUE(KnxParseConfiguration(kEmptyConfiguration, 8, 8, objects, canonical_json,
+                                            error));
+    TEST_ASSERT_TRUE(objects.empty());
+    TEST_ASSERT_NOT_EQUAL(std::string::npos,
+                canonical_json.find("\"comObjects\":[]"));
+}
+
+TEST_CASE("KNX configuration accepts new format with comObjects",
+          "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+    std::string error;
+    TEST_ASSERT_TRUE(KnxParseConfiguration(kValidConfigurationNewFormat, 8, 8, objects,
+                                            canonical_json, error));
+    TEST_ASSERT_EQUAL(3, objects.size());
+    TEST_ASSERT_EQUAL_STRING("test_switch_command", objects[0].id.c_str());
+    TEST_ASSERT_FALSE(objects[0].readable);
+    TEST_ASSERT_TRUE(objects[0].writable);
+    TEST_ASSERT_EQUAL_STRING("test_temperature", objects[2].id.c_str());
+    TEST_ASSERT_EQUAL(9, objects[2].datapoint_type.main);
+    TEST_ASSERT_EQUAL(1, objects[2].datapoint_type.subtype);
+    TEST_ASSERT_EQUAL_STRING("°C", objects[2].unit.c_str());
+    TEST_ASSERT_FALSE(canonical_json.empty());
+}
+
+TEST_CASE("KNX configuration rejects new format without comObjects",
+          "[knx][configuration]") {
+    constexpr char kInvalidNewFormat[] = R"json({
+      "media_type": "knx_ip",
+      "physical_address": "15.15.199"
+    })json";
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+    std::string error;
+    TEST_ASSERT_FALSE(KnxParseConfiguration(kInvalidNewFormat, 8, 8, objects, canonical_json,
+                                             error));
+}
+
+TEST_CASE("KNX configuration preserves unit field from new format", "[knx][configuration]") {
+    std::vector<KnxCommunicationObject> objects;
+    std::string canonical_json;
+    std::string error;
+    TEST_ASSERT_TRUE(KnxParseConfiguration(kValidConfigurationNewFormat, 8, 8, objects,
+                                            canonical_json, error));
+    TEST_ASSERT_TRUE(objects[0].unit.empty());   // null in JSON
+    TEST_ASSERT_EQUAL_STRING("°C", objects[2].unit.c_str());
+}
+
+TEST_CASE("KNX rejects unknown subtypes and accepts four digit subtypes", "[knx][configuration]") {
+    for (const auto* name : {"DPT-1.999", "DPT-3.001", "DPT-7.010", "DPT-20.1000"}) {
+        std::string json = kValidConfigurationNewFormat;
+        json.replace(json.find("DPT-1.001"), 9, name);
+        std::vector<KnxCommunicationObject> objects;
+        std::string error, canonical, address;
+        TEST_ASSERT_FALSE(KnxParseConfiguration(json,8,8,objects,canonical,error,&address));
+        TEST_ASSERT_TRUE(objects.empty());
+        TEST_ASSERT_TRUE(canonical.empty());
+        TEST_ASSERT_TRUE(address.empty());
+    }
+    KnxDpt dpt;
+    TEST_ASSERT_TRUE(KnxParseDpt("DPT-30.1010",dpt));
+    KnxValue value;
+    TEST_ASSERT_TRUE(KnxParseValue(dpt,"16777215",value));
+    std::vector<uint8_t> bytes;
+    TEST_ASSERT_TRUE(KnxEncodeValue(dpt,value,bytes));
+    TEST_ASSERT_EQUAL(4,bytes.size());
+    TEST_ASSERT_FALSE(KnxParseValue(dpt,"16777216",value));
+}
+
+TEST_CASE("KNX subtype validation protects decoded outputs", "[knx][datapoint]") {
+    KnxValue value = uint8_t{3};
+    const uint8_t reserved[] = {0,5};
+    TEST_ASSERT_FALSE(KnxDecodeValue({20,102,true},reserved,sizeof(reserved),value));
+    TEST_ASSERT_EQUAL(3,std::get<uint8_t>(value));
+    const uint8_t invalid[] = {0,0x7f,0xff};
+    TEST_ASSERT_FALSE(KnxDecodeValue({9,1,true},invalid,sizeof(invalid),value));
+    TEST_ASSERT_EQUAL(3,std::get<uint8_t>(value));
+}

@@ -51,6 +51,7 @@ public:
     virtual void StartNetwork() override;
     virtual void SetNetworkEventCallback(NetworkEventCallback callback) override;
     virtual NetworkInterface* GetNetwork() override;
+    virtual esp_netif_obj* GetEspNetif() override;
     virtual const char* GetNetworkStateIcon() override;
     virtual void SetPowerSaveLevel(PowerSaveLevel level) override;
     virtual std::string GetBoardJson() override;

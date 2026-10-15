@@ -243,6 +243,10 @@ NetworkInterface* WifiBoard::GetNetwork() {
     return &network;
 }
 
+esp_netif_obj* WifiBoard::GetEspNetif() {
+    return esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+}
+
 const char* WifiBoard::GetNetworkStateIcon() {
     auto& wifi = WifiManager::GetInstance();
 

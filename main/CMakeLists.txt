@@ -45,6 +45,22 @@ set(SOURCES "audio/audio_codec.cc"
 
 set(INCLUDE_DIRS "." "display" "display/lvgl_display" "display/lvgl_display/jpg" "audio" "audio/demuxer" "protocols")
 
+if(CONFIG_XIAOZHI_KNX_IP)
+    list(APPEND SOURCES
+        "knx/knx_config.cc"
+        "knx/knx_object.cc"
+        "knx/knx_validation.cc"
+        "knx/knx_manager.cc"
+        "knx/knx_mcp_tools.cc"
+    )
+    list(APPEND INCLUDE_DIRS "knx")
+endif()
+
+if(CONFIG_XIAOZHI_FTP_SERVER)
+    list(APPEND SOURCES "ftp_server/ftp_server.cc")
+    list(APPEND INCLUDE_DIRS "ftp_server")
+endif()
+
 # Add board common files
 list(APPEND SOURCES
     "boards/common/board.cc"
@@ -1119,6 +1135,9 @@ if(CONFIG_BOARD_TYPE_ESP32_P4_FUNCTION_EV_BOARD)
         sdmmc
     )
 endif()
+if(CONFIG_XIAOZHI_KNX_IP)
+    list(APPEND MAIN_PRIV_REQUIRES_EXTRA esp_knx_ip)
+endif()
 idf_component_register(SRCS ${SOURCES}
                     EMBED_FILES ${LANG_SOUNDS} ${COMMON_SOUNDS}
                     INCLUDE_DIRS ${INCLUDE_DIRS}
@@ -1149,10 +1168,53 @@ idf_component_register(SRCS ${SOURCES}
                         ${MAIN_PRIV_REQUIRES_EXTRA}
                     )
 
+partition_table_get_partition_info(littlefs_partition_size "--partition-name littlefs" "size")
+if(littlefs_partition_size)
+    littlefs_create_partition_image(littlefs "${PROJECT_DIR}/littlefs" FLASH_IN_PROJECT)
+else()
+    message(STATUS "Partition table has no littlefs partition; LittleFS image is disabled")
+endif()
+
 # Keep project-owned C++ on GNU C++23. ESP-IDF 6 may default to a newer
 # dialect; pin the baseline so main/ does not depend on it.
 if(NOT CMAKE_BUILD_EARLY_EXPANSION)
     target_compile_options(${COMPONENT_LIB} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++23>)
+endif()
+
+# espp/ftp lazily constructs espp::FileSystem for LIST/DELE/RMD. XiaoZhi owns
+# the LittleFS lifecycle, so make that wrapper adopt the existing mount instead
+# of registering (and potentially formatting) the same partition again.
+if(CONFIG_XIAOZHI_FTP_SERVER AND NOT CMAKE_BUILD_EARLY_EXPANSION)
+    idf_component_get_property(espp_file_system_lib espp__file_system COMPONENT_LIB)
+    idf_component_get_property(espp_file_system_dir espp__file_system COMPONENT_DIR)
+
+    set(espp_file_system_source "${espp_file_system_dir}/src/file_system.cpp")
+    file(READ "${espp_file_system_source}" espp_file_system_contents)
+    set(espp_directory_size_bug "result += fmt::format(\"{:>8} \", \"\");")
+    string(FIND "${espp_file_system_contents}" "${espp_directory_size_bug}"
+           espp_directory_size_bug_offset)
+    if(espp_directory_size_bug_offset EQUAL -1)
+        message(FATAL_ERROR "espp/file_system changed; update the FTP LIST compatibility patch")
+    endif()
+    string(REPLACE "${espp_directory_size_bug}"
+                   "result += fmt::format(\"{:>8} \", 0);"
+                   espp_file_system_contents "${espp_file_system_contents}")
+    set(espp_file_system_patched_source
+        "${CMAKE_CURRENT_BINARY_DIR}/espp_file_system_xiaozhi.cpp")
+    file(WRITE "${espp_file_system_patched_source}" "${espp_file_system_contents}")
+
+    get_target_property(espp_file_system_sources ${espp_file_system_lib} SOURCES)
+    list(FIND espp_file_system_sources "${espp_file_system_source}"
+         espp_file_system_source_index)
+    if(espp_file_system_source_index EQUAL -1)
+        message(FATAL_ERROR "Could not replace the espp/file_system source for FTP LIST")
+    endif()
+    list(REMOVE_ITEM espp_file_system_sources "${espp_file_system_source}")
+    list(APPEND espp_file_system_sources "${espp_file_system_patched_source}")
+    set_property(TARGET ${espp_file_system_lib} PROPERTY SOURCES ${espp_file_system_sources})
+
+    target_compile_definitions(${espp_file_system_lib} PRIVATE
+        esp_vfs_littlefs_register=xiaozhi_ftp_adopt_littlefs_mount)
 endif()
 
 # Use target_compile_definitions to define the reported board identity
