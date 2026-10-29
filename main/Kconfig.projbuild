@@ -472,6 +472,9 @@ choice BOARD_TYPE
     config BOARD_TYPE_WAVESHARE_ESP32_C5_TOUCH_LCD_1_69
         bool "Waveshare ESP32-C5-Touch-LCD-1.69"
         depends on IDF_TARGET_ESP32C5
+    config BOARD_TYPE_WAVESHARE_ESP32_C5_TOUCH_LCD_3_5
+        bool "Waveshare ESP32-C5-Touch-LCD-3.5"
+        depends on IDF_TARGET_ESP32C5
     config BOARD_TYPE_WAVESHARE_ESP32_C6_EPAPER_1_54
         bool "Waveshare ESP32-C6-e-Paper-1.54"
         depends on IDF_TARGET_ESP32C6
@@ -490,6 +493,9 @@ choice BOARD_TYPE
     config BOARD_TYPE_WAVESHARE_ESP32_C6_TOUCH_AMOLED_1_8
         bool "Waveshare ESP32-C6-Touch-AMOLED-1.8"
         depends on IDF_TARGET_ESP32C6
+    config BOARD_TYPE_WAVESHARE_ESP32_C6_TOUCH_AMOLED_1_8_V2
+        bool "Waveshare ESP32-C6-Touch-AMOLED-1.8 V2"
+        depends on IDF_TARGET_ESP32C6
     config BOARD_TYPE_WAVESHARE_ESP32_C6_TOUCH_AMOLED_2_06
         bool "Waveshare ESP32-C6-Touch-AMOLED-2.06"
         depends on IDF_TARGET_ESP32C6
@@ -501,6 +507,9 @@ choice BOARD_TYPE
         depends on IDF_TARGET_ESP32C6
     config BOARD_TYPE_WAVESHARE_ESP32_C6_TOUCH_LCD_1_83
         bool "Waveshare ESP32-C6-Touch-LCD-1.83"
+        depends on IDF_TARGET_ESP32C6
+    config BOARD_TYPE_WAVESHARE_ESP32_C6_TOUCH_LCD_2_8
+        bool "Waveshare ESP32-C6-Touch-LCD-2.8"
         depends on IDF_TARGET_ESP32C6
     config BOARD_TYPE_WAVESHARE_ESP32_P4_WIFI6_TOUCH_LCD_3_4C
         bool "Waveshare ESP32-P4 Wi-Fi 6 Touch LCD 3.4C"
