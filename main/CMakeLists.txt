@@ -260,8 +260,8 @@ elseif(CONFIG_BOARD_TYPE_M5STACK_STOPWATCH)
     set(BUILTIN_TEXT_FONT font_noto_sans_basic_30_4)
     set(BUILTIN_ICON_FONT font_material_symbols_30_4)
     set(DEFAULT_EMOJI_COLLECTION noto-color-emoji_64)
-elseif(CONFIG_BOARD_TYPE_M5STACK_CORE_P4)
-    set(BOARD_DIR "m5stack/corep4")
+elseif(CONFIG_BOARD_TYPE_M5STACK_CORE_P4X)
+    set(BOARD_DIR "m5stack/corep4x")
     set(BUILTIN_TEXT_FONT font_noto_sans_basic_30_4)
     set(BUILTIN_ICON_FONT font_material_symbols_30_4)
     set(DEFAULT_EMOJI_COLLECTION noto-color-emoji_64)
@@ -1211,6 +1211,12 @@ endif()
 if(CONFIG_XIAOZHI_KNX_IP)
     list(APPEND MAIN_PRIV_REQUIRES_EXTRA esp_knx_ip)
 endif()
+# The Otto camera board uses the USB Serial/JTAG host connection to detect
+# charging from a USB port. The board is ESP32-S3 only, so require the driver
+# on that target and keep other target builds unchanged.
+if(IDF_TARGET STREQUAL "esp32s3")
+    list(APPEND MAIN_PRIV_REQUIRES_EXTRA esp_driver_usb_serial_jtag)
+endif()
 idf_component_register(SRCS ${SOURCES}
                     EMBED_FILES ${LANG_SOUNDS} ${COMMON_SOUNDS}
                     INCLUDE_DIRS ${INCLUDE_DIRS}
@@ -1220,6 +1226,7 @@ idf_component_register(SRCS ${SOURCES}
                         esp_psram
                         esp_netif
                         esp_eth
+                        esp_adc
                         esp_driver_gpio
                         esp_driver_uart
                         esp_driver_spi
