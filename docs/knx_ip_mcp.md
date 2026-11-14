@@ -109,8 +109,8 @@ registry.
 
 ## `self.knx.import_configuration`
 
-This owner-only commissioning tool is excluded from the AI tool audience. Its
-required `configuration` property is the complete object registry encoded as a
+This commissioning tool is intended for the owner and excluded from the default
+AI tool audience. Its required `configuration` property is the complete object registry encoded as a
 JSON string. Validation and the atomic LittleFS commit finish before the active registry is
 replaced. A successful import takes effect immediately by restarting the KNX
 routing transport; a failed import leaves the previous runtime and persisted
@@ -119,8 +119,60 @@ configuration unchanged.
 Use [the configuration guide](knx_ip_configuration.md) for the schema, import
 procedure, size limits, and generic test registry.
 
+`self.knx.import_configuration_file` uses the same validation and commit path
+for the completed upload at `/littlefs/interfaces/knxConfig.json.tmp`.
+
+Both import tools carry `annotations.audience: ["user"]` and are omitted from
+`tools/list` unless `withUserTools` is true. **This is not authorization.** The
+device dispatcher accepts direct calls by name in both MCP versions, even if
+the caller never listed user tools. The backend must authenticate the owner and
+authorize commissioning actions before forwarding them. Request metadata and
+`withUserTools` must not be treated as proof of permission.
+
 ## Error Behavior
 
 Validation and transport failures become MCP tool errors with a concise reason.
 No failed write changes the cache. If KNX is unavailable, other XiaoZhi MCP
 tools and voice functions remain operational.
+
+- Invalid argument types, missing required arguments and unknown tool names use
+  JSON-RPC `error.code: -32602` in both versions, without executing the callback.
+- For legacy `2024-11-05`, a KNX execution failure uses JSON-RPC
+  `error.code: -32603`.
+- For `2026-07-28`, an execution failure uses `result.resultType: "complete"`
+  **and `result.isError: true`**, with the reason in text content. `complete`
+  means the request finished; it does not mean the KNX operation succeeded.
+- Successful writes mean the transport accepted the send, not that an actuator
+  confirmed it. Reads return `completion: "asynchronous"`; only a received
+  telegram makes the object cache valid.
+
+The newer protocol does not change KNX's DPT-directed string representation:
+`value` must still be a JSON string, including for booleans, numbers and compound
+values. For example, use `"true"`, `"20.0"` or `"12,34,56"`, not a JSON boolean,
+number or array. Both versions reject non-string values. Newer requests also
+reject fractional `offset`/`limit` values; legacy requests retain integer
+truncation compatibility. Each newer request must carry its own protocol metadata;
+a previous discovery or call does not change later legacy requests.
+
+## Host Regression Tests
+
+Run from the repository root after resolving ESP-IDF component dependencies:
+
+```sh
+python -m unittest scripts.tests.test_mcp_server scripts.tests.test_knx_mcp_server -v
+```
+
+These tests require a C++23 host compiler, cJSON and mbedTLS development libraries
+(for example, `libcjson-dev` and `libmbedtls-dev` on Debian/Ubuntu). The shared
+harness accepts `CXX`, `MCP_CJSON_CFLAGS` and `MCP_CJSON_LIBS` for non-system
+installations. `ESP_KNX_IP_DIR` can select an existing component checkout. Missing
+dependencies produce a reported skip, which is not a passing regression run.
+
+The KNX suite compiles the production dispatcher, registration, manager,
+configuration parser and DPT codecs. Requests pass through `ParseMessage`, the
+application scheduling queue and JSON-RPC serialization; only platform,
+transport and storage are faked. It covers discovery, catalog/object pagination,
+type and DPT validation, read/write side effects, deferred mixed-version requests,
+error envelopes, import persistence failures and the visibility/authorization
+boundary above. It does not validate backend owner authentication, real KNX
+traffic, filesystem atomicity or FreeRTOS/network lifecycle timing.

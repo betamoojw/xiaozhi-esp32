@@ -135,8 +135,12 @@ Example MCP arguments using the test switch command:
 
 Import a root object whose `comObjects` is `[]` to persist an empty registry and
 remove all configured callbacks.
-The import tool is deliberately user-only so the AI model cannot rewrite its
-own KNX authorization boundary.
+The import tool is deliberately user-only so it is excluded from the model's
+default tool catalog. This is a discovery/audience filter, not device-side
+authorization: a caller that knows the tool name can still invoke it through
+`tools/call`. The authenticated backend must enforce owner approval for both
+import tools and must not forward model-initiated imports. Neither
+`withUserTools` nor client-supplied MCP metadata proves owner identity.
 
 ## Cache Semantics
 
