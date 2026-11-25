@@ -42,6 +42,31 @@ class McpServerTest(McpHostHarness, unittest.TestCase):
         response, = self.responses([self.call(7, "self.set_press_to_talk", {})])
         self.assert_error(response, 7, -32602, "Missing required argument: mode")
 
+    def test_tavily_registration_tracks_key(self):
+        name = "self.tavily.web_search"
+
+        def search(request_id):
+            return self.call(request_id, name, {"query": "sample"})
+
+        responses = self.responses([
+            self.modern(1), search(2), ":set-key", self.modern(3),
+            search(4), ":clear-key", self.modern(5), search(6),
+        ], mode="tavily", expected_count=6)
+        by_id = {reply["id"]: reply for reply in responses}
+        self.assertNotIn(name, [tool["name"] for tool in by_id[1]["result"]["tools"]])
+        self.assert_error(by_id[2], 2, -32602, "Unknown tool: " + name)
+        self.assertIn(name, [tool["name"] for tool in by_id[3]["result"]["tools"]])
+        self.assertNotIn("tvly-host-test", json.dumps(by_id[3]))
+        self.assertEqual(by_id[4]["result"]["content"][0]["text"], "Answer: host Tavily result\n\n")
+        self.assertNotIn(name, [tool["name"] for tool in by_id[5]["result"]["tools"]])
+        self.assert_error(by_id[6], 6, -32602, "Unknown tool: " + name)
+
+    def test_tavily_is_registered_at_boot_with_a_saved_key(self):
+        response, = self.responses([self.modern(1)], mode="tavily-boot")
+        names = [tool["name"] for tool in response["result"]["tools"]]
+        self.assertIn("self.tavily.web_search", names)
+        self.assertNotIn("self.web_search", names)
+
     def test_discovery_before_conversation_hello(self):
         request = self.modern(10000, "server/discover")
         response, = self.responses([request])

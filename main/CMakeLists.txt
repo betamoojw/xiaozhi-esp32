@@ -34,6 +34,7 @@ set(SOURCES "audio/audio_codec.cc"
             "protocols/mqtt_protocol.cc"
             "protocols/websocket_protocol.cc"
             "mcp_server.cc"
+            "mcp_tools.cc"
             "system_info.cc"
             "application.cc"
             "ota.cc"
@@ -1279,6 +1280,7 @@ endif()
 # the LittleFS lifecycle, so make that wrapper adopt the existing mount instead
 # of registering (and potentially formatting) the same partition again.
 if(CONFIG_XIAOZHI_FTP_SERVER AND NOT CMAKE_BUILD_EARLY_EXPANSION)
+    include("${CMAKE_CURRENT_LIST_DIR}/ftp_server/fmt_stack.cmake")
     idf_component_get_property(espp_file_system_lib espp__file_system COMPONENT_LIB)
     idf_component_get_property(espp_file_system_dir espp__file_system COMPONENT_DIR)
 

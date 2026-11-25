@@ -4,20 +4,26 @@ on:
   push:
     paths:
       - 'main/mcp_server.*'
+      - 'main/mcp_tools.*'
+      - 'main/web_search_format.h'
       - 'main/cjson_utils.h'
       - 'main/boards/common/press_to_talk_mcp_tool.*'
       - 'main/knx/**'
       - 'main/idf_component.yml'
       - 'scripts/tests/*mcp*.py'
+      - 'scripts/tests/test_web_search_format.py'
       - '.github/workflows/test-mcp.yml'
   pull_request:
     paths:
       - 'main/mcp_server.*'
+      - 'main/mcp_tools.*'
+      - 'main/web_search_format.h'
       - 'main/cjson_utils.h'
       - 'main/boards/common/press_to_talk_mcp_tool.*'
       - 'main/knx/**'
       - 'main/idf_component.yml'
       - 'scripts/tests/*mcp*.py'
+      - 'scripts/tests/test_web_search_format.py'
       - '.github/workflows/test-mcp.yml'
   workflow_dispatch:
 
@@ -47,7 +53,8 @@ jobs:
           python3 -B - <<'PY'
           import unittest
           suite = unittest.defaultTestLoader.loadTestsFromNames([
-              "scripts.tests.test_mcp_server", "scripts.tests.test_knx_mcp_server"])
+              "scripts.tests.test_mcp_server", "scripts.tests.test_knx_mcp_server",
+              "scripts.tests.test_web_search_format"])
           result = unittest.TextTestRunner(verbosity=2).run(suite)
           # Missing host dependencies must not silently turn this CI job green.
           raise SystemExit(not result.wasSuccessful() or bool(result.skipped))
